@@ -11,7 +11,7 @@ Clone this repo, and execute the following commands:
 
 ## Underneath
 
-It pulls the keyboard codebase from [Gaia](https://github.com/mozilla-b2g/gaia), and re-implements `navigator.mozInputMethod` API so we could communicate between the fake input and the app.
+It pulls the keyboard codebase from [Gaia](https://github.com/brianweet/gaia), and re-implements `navigator.mozInputMethod` API so we could communicate between the fake input and the app.
 
 The input has to be a fake one so the native keyboard will not pop-up when you try this page on a touchscreen.
 
