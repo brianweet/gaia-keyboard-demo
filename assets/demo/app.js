@@ -2,56 +2,6 @@
 
 (function(exports) {
 
-var ConfigDialog = function(app) {
-  this.app = app;
-};
-
-ConfigDialog.prototype.CONFIG_DIALOG_ELEMENT_ID = 'config-dialog';
-ConfigDialog.prototype.CONFIG_BTN_ELEMENT_ID = 'config-btn';
-ConfigDialog.prototype.CONFIG_CLOSE_ELEMENT_ID = 'config-close';
-
-ConfigDialog.prototype.start = function() {
-  this.configBtn = document.getElementById(this.CONFIG_BTN_ELEMENT_ID);
-  this.configDialog = document.getElementById(this.CONFIG_DIALOG_ELEMENT_ID);
-  this.configClose = document.getElementById(this.CONFIG_CLOSE_ELEMENT_ID);
-
-  this.configClose.addEventListener('click', this);
-  this.configBtn.addEventListener('click', this);
-};
-
-ConfigDialog.prototype.handleEvent = function(evt) {
-  switch (evt.target) {
-    case this.configBtn:
-      //this.show();
-
-      this.app.postMessage({
-        api: 'api',
-        method: 'tt_test'
-      });
-
-      break;
-
-    case this.configClose:
-      this.hide();
-
-      break;
-  }
-};
-
-ConfigDialog.prototype.show = function() {
-  this.configDialog.classList.add('show');
-  this.configDialog
-    .firstElementChild.firstElementChild.firstElementChild.scrollTop = 0;
-
-  window.requestAnimationFrame(this.app.removeFocus.bind(this.app));
-};
-
-ConfigDialog.prototype.hide = function() {
-  this.configDialog.classList.remove('show');
-
-  window.requestAnimationFrame(this.app.getFocus.bind(this.app));
-};
-
 var KeyboardDemoApp = function() {
   this.container = null;
 };
@@ -69,8 +19,8 @@ KeyboardDemoApp.prototype.start = function() {
   this.inputMethodHandler = new InputMethodHandler(this);
   this.inputMethodHandler.start();
 
-  this.configDialog = new ConfigDialog(this);
-  this.configDialog.start();
+  this.typeTestHandler = new TypeTestHandler(this);
+  this.typeTestHandler.start();
 
   this.layouts = new KeyboardLayouts(this);
   this.layouts.start();
@@ -112,6 +62,7 @@ KeyboardDemoApp.prototype.getFocus = function() {
 };
 
 KeyboardDemoApp.prototype.removeFocus = function() {
+  return;
   if (!this.focused) {
     return;
   }
@@ -189,6 +140,9 @@ KeyboardDemoApp.prototype.handleMessage = function(data) {
 
       break;
 
+    case 'touchTrack':
+      this.typeTestHandler.processLog(data);
+      break;
     default:
       throw new Error('KeyboardDemoApp: Unknown message.');
 

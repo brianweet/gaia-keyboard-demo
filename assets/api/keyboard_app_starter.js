@@ -70,14 +70,16 @@ KeyboardAppStarter.prototype._startAPI = function() {
     };
   }
 
-  //look at line 81, ignore 74-79, think I have to move logic to keyboard app 
-  setTimeout(function(){
-    debugger;
-    if(window.app){
-      this.touchTrack = new TouchTrack(window.app);
-      this.touchTrack.start();
-    }
-  },500);
+  //setTimeout(function(){
+  //  debugger;
+  //  if(window.app){
+  //    console.log('init TouchTrack');
+  //    this.touchTrack = new TouchTrack(window.app);
+  //    this.touchTrack.start();
+  //  }else{
+  //    console.log('could not init TouchTrack');
+  //  }
+  //},2000);
   
 };
 
@@ -91,22 +93,6 @@ KeyboardAppStarter.prototype.handleEvent = function(evt) {
   switch (data.method) {
     case 'updateHash':
       window.location.replace('#' + data.result);
-
-      break;
-    case 'tt_test':
-      //debugger;
-      console.log(['message in KeyboardAppStarter eventhandler']);
-      
-      if(this.touchTrack){
-        var touches = this.touchTrack.getTrackedTouches();
-          this.touchTrack.clear();
-  
-        if(touches.length)
-          for(var i = 0; i < touches.length; i++)
-            console.log(touches[i]);
-  
-        console.log(['wrote log to console']);
-      }
 
       break;
   }
