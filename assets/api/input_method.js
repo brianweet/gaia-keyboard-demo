@@ -156,7 +156,7 @@
   InputContext.prototype.handleEvent = function(evt) {
     var data = evt.data;
 
-    if (data.api !== 'inputcontext') {
+    if (data.api !== 'inputcontext' || this._contextId !== data.contextId) {
       return;
     }
 
