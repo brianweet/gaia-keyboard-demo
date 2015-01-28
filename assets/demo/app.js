@@ -2,6 +2,7 @@
 
 (function(exports) {
 
+
 var KeyboardDemoApp = function() {
   this.container = null;
 };
@@ -20,7 +21,6 @@ KeyboardDemoApp.prototype.start = function() {
   this.inputMethodHandler.start();
 
   this.typeTestHandler = new TypeTestHandler(this);
-  this.typeTestHandler.start();
 
   this.layouts = new KeyboardLayouts(this);
   this.layouts.start();
@@ -138,9 +138,20 @@ KeyboardDemoApp.prototype.handleMessage = function(data) {
         this.inputMethodHandler.composition.scrollIntoView();
       }.bind(this));
 
+      if(!this.typeTestHandler._starting){
+        this.typeTestHandler
+          .start({ width:data.args[0],height:data.args[1],keys:data.args[2] }, 
+                  { width: window.innerWidth || document.body.clientWidth, 
+                    height: window.innerHeight || document.body.clientHeight });
+      } else {
+        //TODO do something with new size (if it actually changed)
+        //this.typeTestHandler.handleNewSize(data.args[2]);
+      }
+
       break;
 
     case 'touchTrack':
+      console.log('KeyboardDemoApp: handle touchTrack event');
       this.typeTestHandler.processLog(data);
       break;
     default:

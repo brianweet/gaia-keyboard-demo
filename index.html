@@ -18,7 +18,7 @@
       '<script defer src="//cdnjs.cloudflare.com/ajax/libs/es6-shim/0.11.0/es6-shim.min.js"><' + '/script>');
   }
   </script>
-  <script defer src="assets/demo/input_method.js"></script>
+  <script defer src="assets/demo/input_method_handler.js"></script>
   <script defer src="assets/demo/settings.js"></script>
   <script defer src="assets/demo/layouts.js"></script>
   <script defer src="assets/demo/type_test.js"></script>
@@ -28,15 +28,60 @@
 <body>
   <div class="container">
     <p>
-      <strong>Type this sentence</strong>
-    </p>
-    <p>
+      <strong>Type this sentence</strong><br/>
       <span id="type-test-current-sentence"></span>
     </p>
+    <div class="progress">
+      <div id="progress-bar"
+            class="progress-bar progress-bar-success" 
+            role="progressbar" 
+            aria-valuenow="0" 
+            aria-valuemin="0" 
+            aria-valuemax="100" 
+            style="width: 0%">
+      </div>
+    </div>
     <hr/>
     <p>
       <span id="type-test-status"></span><br/>
-      <span id="type-test-last-result"></span>
+      <table class="table table-condensed">
+        <thead>
+          <tr>
+            <th>Last Sentence</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td scope="row">
+              <span id="correct-cpm" class="label label-success">0</span>
+              |
+              <span id="wrong-cpm" class="label label-danger">0</span>
+              CPM
+            </td>
+            <td>
+              <span id="correct-cpm-total" class="label label-success">0</span>
+              |
+              <span id="wrong-cpm-total" class="label label-danger">0</span>
+              CPM
+            </td>
+          </tr>
+          <tr>
+            <td scope="row">
+              <span id="correct-char" class="label label-success">0</span>
+              |
+              <span id="wrong-char" class="label label-danger">0</span>
+              char.
+            </td>
+            <td>
+              <span id="correct-char-total" class="label label-success">0</span>
+              |
+              <span id="wrong-char-total" class="label label-danger">0</span>
+              char.
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </p>
     <div id="inputarea" dir="auto" class="focused well well-sm" style="display:none;">
       <span id="inputtext"></span><span id="composition"></span>
