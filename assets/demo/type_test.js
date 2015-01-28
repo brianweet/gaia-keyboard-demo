@@ -211,6 +211,18 @@ TypeTestHandler.prototype._setNewSentence = function(newSentenceObj) {
   if(typeof newSentenceObj === "string")
     throw new Error('Expect sentence object');
 
+  //reset keyboard to initial state
+  this.app.inputMethodHandler.clear();
+  this.app.postMessage({
+    api: 'inputmethod',
+    method: 'setInputContext',
+    ctx: true,
+    selectionStart: 0,
+    selectionEnd: 0,
+    textBeforeCursor: '',
+    textAfterCursor: ''
+  });
+
   var resultId = Math.random().toString(32).substr(2, 8);
   results[resultId] = { id: Math.random().toString(32).substr(2, 8), 
                         sentence: newSentenceObj, 
@@ -241,15 +253,6 @@ TypeTestHandler.prototype._endCurrentSentence = function() {
   });
 
   //reset keyboard context info
-  this.app.postMessage({
-    api: 'inputmethod',
-    method: 'setInputContext',
-    ctx: true,
-    selectionStart: 0,
-    selectionEnd: 0,
-    textBeforeCursor: '',
-    textAfterCursor: ''
-  });
   
   this.statusSpan.innerHTML = "Waiting for score";
 };

@@ -148,6 +148,11 @@
   InputContext.prototype.stop = function() {
     window.removeEventListener('message', this);
 
+    this._pendingPromises.forEach(function(value, key) {
+      debugger;
+      value._reject("");
+    }, this._pendingPromises);
+
     this._contextId = '';
     this._pendingPromisesId = 0;
     this._pendingPromises = null;
@@ -156,7 +161,7 @@
   InputContext.prototype.handleEvent = function(evt) {
     var data = evt.data;
 
-    if (data.api !== 'inputcontext' || this._contextId !== data.contextId) {
+    if (data.api !== 'inputcontext') {
       return;
     }
 
@@ -174,12 +179,12 @@
 
     var p = this._pendingPromises.get(data.id);
     this._pendingPromises.delete(data.id);
-
-    if (typeof data.result !== 'undefined') {
-      p._resolve(data.result);
-    } else {
-      p._reject(data.error);
-    }
+    if (p)
+      if (typeof data.result !== 'undefined') {
+        p._resolve(data.result);
+      } else {
+        p._reject(data.error);
+      }
   };
 
   InputContext.prototype._sendMessage = function(method, args) {
