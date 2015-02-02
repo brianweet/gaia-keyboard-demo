@@ -1,0 +1,1 @@
+window.COMPONENTS_BASE_URL = 'ftu/shared/elements/';
