@@ -20,7 +20,7 @@ InputMethodHandler.prototype.start = function() {
   this.composition = document.getElementById(this.COMPOSITION_ELEMENT_ID);
 };
 
-InputMethodHandler.prototype.clear = function(first_argument) {
+InputMethodHandler.prototype.clear = function() {
   this._text = this._currentText = '';
   while(this.input.lastChild){
     this.input.removeChild(this.input.lastChild);
@@ -191,19 +191,13 @@ InputMethodHandler.prototype._handleInput = function(job, str, offset, length) {
       break;
 
     case 'append':
-    //TODO BwE
-      if(!this.app.typeTestHandler.checkInputChar(str)){
-        //Not the char we want or we're done with the current sentence
-        //so don't add it to the input
-        break;
-      }
+      this.app.typeTestHandler.checkInputChar(str);
       
-
       this._currentText += str;
 
       window.requestAnimationFrame(function() {
         this.composition.textContent = '';
-        if (lastChild.nodeName !== '#text') {
+        if (!lastChild || lastChild.nodeName !== '#text') {
           container.appendChild(document.createTextNode(str));
         } else {
           var text = lastChild.textContent + str;

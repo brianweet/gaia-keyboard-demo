@@ -2,108 +2,83 @@
 
 (function(exports) {
 
-var TypeTestScoreHandler = function() {
-  this.countTotalTime = 0;
-  this.countTotalChar = 0;
-  this.countTotalWrongChar = 0;
-};
+var SentenceResult = (function () {
+    function SentenceResult(sentenceObject) {
+        this.id = Math.random().toString(32).substr(2, 8);
+        this.sentence = sentenceObject;
+        this.typedSequence = '';
+        this.wrongCharCount = 0;
+        this.data = [];
+        this.done = false;
+        this.uploaded = false;
+    }
+    return SentenceResult;
+})();
 
-TypeTestScoreHandler.prototype.LAST_CORRECT_CPM_ELEMENT_ID = 'correct-cpm';
-TypeTestScoreHandler.prototype.LAST_WRONG_CPM_ELEMENT_ID = 'wrong-cpm';
-TypeTestScoreHandler.prototype.TOTAL_CORRECT_CPM_ELEMENT_ID = 'correct-cpm-total';
-TypeTestScoreHandler.prototype.TOTAL_WRONG_CPM_ELEMENT_ID = 'wrong-cpm-total';
-
-TypeTestScoreHandler.prototype.LAST_CORRECT_CHAR_ELEMENT_ID = 'correct-char';
-TypeTestScoreHandler.prototype.LAST_WRONG_CHAR_ELEMENT_ID = 'wrong-char';
-TypeTestScoreHandler.prototype.TOTAL_CORRECT_CHAR_ELEMENT_ID = 'correct-char-total';
-TypeTestScoreHandler.prototype.TOTAL_WRONG_CHAR_ELEMENT_ID = 'wrong-char-total';
-
-TypeTestScoreHandler.prototype.start = function() {
-  this.correctCpm = document.getElementById(this.LAST_CORRECT_CPM_ELEMENT_ID);
-  this.wrongCpm = document.getElementById(this.LAST_WRONG_CPM_ELEMENT_ID);
-  this.totalCorrectCpm = document.getElementById(this.TOTAL_CORRECT_CPM_ELEMENT_ID);
-  this.totalWrongCpm = document.getElementById(this.TOTAL_WRONG_CPM_ELEMENT_ID);
-
-  this.correctChar = document.getElementById(this.LAST_CORRECT_CHAR_ELEMENT_ID);
-  this.wrongChar = document.getElementById(this.LAST_WRONG_CHAR_ELEMENT_ID);
-  this.totalCorrectChar = document.getElementById(this.TOTAL_CORRECT_CHAR_ELEMENT_ID);
-  this.totalWrongChar = document.getElementById(this.TOTAL_WRONG_CHAR_ELEMENT_ID);
-}
-
-TypeTestScoreHandler.prototype.stop = function() {
-  this.countTotalTime = 0;
-  this.countTotalChar = 0;
-  this.countTotalWrongChar = 0;
-
-  this.correctCpm = null;
-  this.wrongCpm = null;
-  this.totalCorrectCpm = null;
-  this.totalWrongCpm = null;
-
-  this.correctChar = null;
-  this.wrongChar = null;
-  this.totalCorrectChar = null;
-  this.totalWrongChar = null;
-};
-
-TypeTestScoreHandler.prototype.addSentence = function(res) {
-  var lastTouch = res.data[res.data.length -1];
-  this.countTotalTime += lastTouch.time;
-  this.countTotalChar += res.sentence.s.length;
-  this.countTotalWrongChar += res.wrongCharCount;
-  
-  //current cpm
-  var tm = 60000 / lastTouch.time;
-  this.correctCpm.innerHTML = 
-    Math.floor(tm * res.sentence.s.length);
-  this.wrongCpm.innerHTML = 
-    Math.floor(tm * res.wrongCharCount);
-
-  //total cpm
-  var tmTotal = 60000 / this.countTotalTime;
-  this.totalCorrectCpm.innerHTML = 
-    Math.floor(tmTotal * this.countTotalChar);
-  this.totalWrongCpm.innerHTML = 
-    Math.floor(tmTotal * this.countTotalWrongChar);
-
-  //current char count
-  this.correctChar.innerHTML = res.sentence.s.length;
-  this.wrongChar.innerHTML = res.wrongCharCount;
-
-  //total char count
-  this.totalCorrectChar.innerHTML = this.countTotalChar;
-  this.totalWrongChar.innerHTML = this.countTotalWrongChar;
-};
-
-  var dataset = [
-  { id : "x",         s : "Are y" },
+var results = new Map(),
+    dataset = [
+  { id : "x",  s : "Are" },
   { id : "mobile20",  s : "Are you going to join us for lunch?" },
-  { id : "mobile89",  s : "Is she done yet?" }
-  ];
-
-  var results = [];
+  { id : "mobile89",  s : "Is she done yet?" },
+  { id : "mobile95",  s : "Thanks for the quick turnaround." },
+  { id : "mobile101", s : "How are you?" },
+  { id : "mobile130", s : "Yes, I am playing." },
+  { id : "mobile139", s : "Please call tomorrow if possible." },
+  { id : "mobile140", s : "We are all fragile." },
+  { id : "mobile148", s : "I would like to attend if so." },
+  { id : "mobile155", s : "I can return earlier." },
+  { id : "mobile156", s : "I am trying again." },
+  { id : "mobile174", s : "I will bring John Brindle." },
+  { id : "mobile193", s : "He would love anything about rocks." },
+  { id : "mobile198", s : "What do you hear?" },
+  { id : "mobile212", s : "Hope your trip to Florida was good." },
+  { id : "mobile226", s : "What's his problem?" },
+  { id : "mobile228", s : "She called and wants to come over this AM." },
+  { id : "mobile229", s : "There is now a meeting at 8PM as well." },
+  { id : "mobile232", s : "See you soon!" },
+  { id : "mobile281", s : "It reads like she is in." },
+  { id : "mobile291", s : "Has Dynegy made a specific request?" },
+  { id : "mobile292", s : "I am walking in now." },
+  { id : "mobile294", s : "They have capacity now." },
+  { id : "mobile310", s : "A gift isn't necessary." },
+  { id : "mobile313", s : "Tell her to get my expense report done." },
+  { id : "mobile314", s : "I am out of town on business tonight." },
+  { id : "mobile319", s : "I'm waiting until she comes home." },
+  { id : "mobile320", s : "Not even close." },
+  { id : "mobile329", s : "Chris Foster is in!" },
+  { id : "mobile334", s : "They are more efficiently pooled." },
+  { id : "mobile404", s : "Could you try ringing her?" },
+  { id : "mobile409", s : "Do you need it today?" },
+  { id : "mobile429", s : "Keep me posted!" },
+  { id : "mobile434", s : "John this message concerns me." },
+  { id : "mobile464", s : "Call me to give me a heads up." },
+  { id : "mobile467", s : "And leave my school alone." },
+  { id : "mobile479", s : "What is in the plan?" },
+  { id : "mobile539", s : "Where do you want to meet to walk over there?" },
+  { id : "mobile561", s : "I am almost speechless." },
+  { id : "mobile563", s : "Ava, please put me on the list." },
+  { id : "mobile564", s : "Suggest you get facts before judging anyone." }
+];
 
 var TypeTestHandler = function(app) {
   this.app = app;
   this._typeTestSessionId = null;
   this._started = this._starting = false;
-  this.currentSentenceObj = null;
+  this.currentResultId = null;
   this.currentCharPos = 0;
 };
 
 TypeTestHandler.prototype.STATUS_ELEMENT_ID = 'type-test-status';
 TypeTestHandler.prototype.CURRENT_SENTENCE_ELEMENT_ID = 'type-test-current-sentence';
-TypeTestHandler.prototype.PROGRESS_BAR_ELEMENT_ID = 'progress-bar';
 
-TypeTestHandler.prototype.start = function(resizeArgs, screenDimensions) {
+TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions) {
   this._starting = true;
   this.currentSentenceSpan = document.getElementById(this.CURRENT_SENTENCE_ELEMENT_ID);
   this.statusSpan = document.getElementById(this.STATUS_ELEMENT_ID);
-  this.progressBar = document.getElementById(this.PROGRESS_BAR_ELEMENT_ID);
-  this.scoreHandler = new TypeTestScoreHandler();
+  this.scoreHandler = new TypeTestScoreHandler(this.app);
   this.scoreHandler.start();
 
-  this.register(resizeArgs, screenDimensions)
+  this.register(keyboardDimensions, screenDimensions)
     .then(function(resp){
       //TODO: check response
 
@@ -172,11 +147,12 @@ TypeTestHandler.prototype.sendResultToServer = function(resultSentenceObj) {
 
 TypeTestHandler.prototype.processLog = function(logMessage) {
   var logData = logMessage.logData;
-  var currentResultObject = results[logMessage.data.id];
+  var currentResultObject = results.get(logMessage.data.id);
   if(!currentResultObject || !logData || !logData.length)
     return;
 
   //log and save data
+  currentResultObject.typedSequence = this.app.inputMethodHandler._currentText;
   currentResultObject.data = logData;
   console.log(currentResultObject);
   this.sendResultToServer(currentResultObject)
@@ -186,25 +162,18 @@ TypeTestHandler.prototype.processLog = function(logMessage) {
         //try again? 
     });
 
-  //show some feedback to ui
-  this.statusSpan.innerHTML = "Well done, lets find you a new sentence!";
-
   //calculate score
-  this.scoreHandler.addSentence(currentResultObject);
+  this.scoreHandler.showScore(currentResultObject);
 
   //fetch new sentence
   setTimeout(function(){
-    var idx = dataset.indexOf(this.currentSentenceObj);
+    var idx = dataset.indexOf(currentResultObject.sentence);
     if(dataset.length <= ++idx)
       this.statusSpan.innerHTML = "You are done woohooo!";
     else
       this._setNewSentence(dataset[idx]);
   }.bind(this), 200);
 }
-
-TypeTestHandler.prototype._sentenceDone = function() {
-  return this.currentSentenceObj.s.length <= this.currentCharPos;
-};
 
 TypeTestHandler.prototype._setNewSentence = function(newSentenceObj) {
   //TODO: create sentence object
@@ -223,20 +192,11 @@ TypeTestHandler.prototype._setNewSentence = function(newSentenceObj) {
     textAfterCursor: ''
   });
 
-  var resultId = Math.random().toString(32).substr(2, 8);
-  results[resultId] = { id: Math.random().toString(32).substr(2, 8), 
-                        sentence: newSentenceObj, 
-                        wrongCharCount: 0,
-                        data:'', 
-                        done: false, 
-                        uploaded: false };
-
-  this.currentResultId = resultId;
-  this.currentSentenceObj = newSentenceObj;
+  var sentenceResult = new SentenceResult(newSentenceObj);
+  results.set(sentenceResult.id, sentenceResult);
+  this.currentResultId = sentenceResult.id;
   this.currentSentenceSpan.innerHTML = newSentenceObj.s;
   this.currentCharPos = 0;
-  this.progressBar.style.width = 0;
-  this.statusSpan.innerHTML = "You can start typing!";
 };
 
 TypeTestHandler.prototype._endCurrentSentence = function() {
@@ -252,46 +212,44 @@ TypeTestHandler.prototype._endCurrentSentence = function() {
     id: this.currentResultId
   });
 
-  //reset keyboard context info
-  
-  this.statusSpan.innerHTML = "Waiting for score";
+  this.scoreHandler.stopProgressBar();
 };
 
 TypeTestHandler.prototype.checkInputChar = function(char){
-    if(!this._started || this._sentenceDone())
-      return false;
+    if(!this._started)
+      return;
 
-    if(!this.currentSentenceObj || !this.currentSentenceObj.s || !this.currentSentenceObj.s.length)
-      throw new Error('TypeTest: Can\'t check input if we don\'t have a an active sentence.');
-    
-    if(this.currentCharPos === 0)
-      this.statusSpan.innerHTML = "Go go go!";
-    
+    var result = results.get(this.currentResultId);
+    if(!result)
+      throw new Error('TypeTest: Can\'t find current sentence.');
 
-    var sentence = this.currentSentenceObj.s;
-    var spanEl = this.currentSentenceSpan;
+    var sentence = result.sentence.s;
+    if(sentence.length <= this.currentCharPos)
+      return;
 
-    //check input
-    if(sentence[this.currentCharPos] !== char){
-      
-      if(results[this.currentResultId]){
-        results[this.currentResultId].wrongCharCount++;
-      }
-
-      console.log('Wrong char');
-      if(window.navigator.vibrate)
-        window.navigator.vibrate(50);
-
-      return false;
+    if(this.currentCharPos === 0){
+      this.scoreHandler.hideScore();
+      this.scoreHandler.startProgressBar(sentence.length);
     }
 
+    //check if input char is correct
+    if(sentence[this.currentCharPos] !== char){
+      console.log('Wrong char');
+
+      result.wrongCharCount++;
+      if(window.navigator.vibrate)
+        window.navigator.vibrate(50);
+      return;
+    }
+
+    //check if we have to end the current sentence
     if(sentence.length <= ++this.currentCharPos){
       this._endCurrentSentence();
     }
     
-    this.progressBar.style.width = (this.currentCharPos / sentence.length) * 100 + '%';
-
+    //make next char big boned
     window.requestAnimationFrame(function() {
+      var spanEl = this.currentSentenceSpan;
       //remove current text
       while(spanEl.lastChild){
         spanEl.removeChild(spanEl.lastChild);
@@ -304,7 +262,7 @@ TypeTestHandler.prototype.checkInputChar = function(char){
       spanEl.appendChild(document.createTextNode(sentence.slice(this.currentCharPos)));
     }.bind(this));
 
-    return true;
+    return;
 };
 
 exports.TypeTestHandler = TypeTestHandler;

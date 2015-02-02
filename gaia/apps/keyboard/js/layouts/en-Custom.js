@@ -4,6 +4,7 @@ Keyboards['en-Custom'] = {
   imEngine: 'latin',
   types: ['text', 'url', 'email', 'password'],
   autoCorrectLanguage: 'en_us',
+  autoCorrectPunctuation: false,
   menuLabel: 'English Custom',
   alt: {
   },
@@ -20,11 +21,42 @@ Keyboards['en-Custom'] = {
       { value: '⇪', ratio: 1.5, keyCode: KeyEvent.DOM_VK_CAPS_LOCK },
       { value: 'z' }, { value: 'x' }, { value: 'c' }, { value: 'v' },
       { value: 'b' }, { value: 'n' }, { value: 'm' },
-      { value: '⇪', ratio: 1.5, keyCode: KeyEvent.DOM_VK_CAPS_LOCK }
+      { value: '&nbsp', ratio: 1.5, keyCode: KeyEvent.DOM_VK_SPACE }
     ], [
       { value: '&nbsp', ratio: 8, keyCode: KeyboardEvent.DOM_VK_SPACE },
       { value: '↵', ratio: 2, keyCode: KeyEvent.DOM_VK_RETURN }
     ]
   ],
-  pages: [undefined ]
+  pages: [undefined, {
+    alt: {
+    },
+    keys: [
+      [
+        { value: '1' }, { value: '2' }, { value: '3' }, { value: '4' },
+        { value: '5' }, { value: '6' }, { value: '7' }, { value: '8' },
+        { value: '9' }, { value: '0' }
+      ], [
+        { value: '@' }, { value: '#' },
+        { value: '$' }, { value: '&' },
+        { value: '*' }, { value: '-' }, { value: '_' }, { value: '/' },
+        { value: '(' }, { value: ')' }
+      ], [
+        { value: 'Alt', ratio: 1.5,
+          keyCode: KeyboardEvent.DOM_VK_ALT,
+          className: 'page-switch-key',
+          targetPage: 0
+        },
+        { value: '+',
+          supportsSwitching: {
+            value: ','
+          }
+        }, { value: ':' }, { value: ';' }, { value: '"' },
+        { value: '\'' }, { value: '!' }, { value: '?' },
+        { value: '&nbsp', ratio: 1.5, keyCode: KeyEvent.DOM_VK_SPACE }
+      ], [
+        { value: '&nbsp', ratio: 8, keyCode: KeyboardEvent.DOM_VK_SPACE },
+        { value: '↵', ratio: 2, keyCode: KeyEvent.DOM_VK_RETURN }
+      ]
+    ]
+  } ]
 };

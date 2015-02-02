@@ -155,6 +155,7 @@ KeyboardDemoApp.prototype.handleMessage = function(data) {
       this.typeTestHandler.processLog(data);
       break;
     default:
+      console.log(data);
       throw new Error('KeyboardDemoApp: Unknown message.');
 
       break;

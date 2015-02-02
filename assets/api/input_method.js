@@ -149,7 +149,6 @@
     window.removeEventListener('message', this);
 
     this._pendingPromises.forEach(function(value, key) {
-      debugger;
       value._reject("");
     }, this._pendingPromises);
 
