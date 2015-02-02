@@ -20,6 +20,13 @@
   <link rel="resource" type="image/png" href="ftu/shared/resources/branding/logosmall.png"/>
   <link rel="manifest" href="manifest.webapp">
 
+  <script>
+  if (!window.Map || !window.Promise || !window.WeakMap || !Object.assign) {
+    document.write(
+      '<script defer src="//cdnjs.cloudflare.com/ajax/libs/es6-shim/0.11.0/es6-shim.min.js"><' + '/script>');
+  }
+  </script>
+
   <!-- Code for the FTU App -->
   <script defer src="ftu/js/utils.js"></script>
   <script defer src="ftu/js/tutorial.js"></script>

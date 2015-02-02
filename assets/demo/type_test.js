@@ -16,49 +16,7 @@ var SentenceResult = (function () {
 })();
 
 var results = new Map(),
-    dataset = [
-  { id : "x",  s : "Are" },
-  { id : "mobile20",  s : "Are you going to join us for lunch?" },
-  { id : "mobile89",  s : "Is she done yet?" },
-  { id : "mobile95",  s : "Thanks for the quick turnaround." },
-  { id : "mobile101", s : "How are you?" },
-  { id : "mobile130", s : "Yes, I am playing." },
-  { id : "mobile139", s : "Please call tomorrow if possible." },
-  { id : "mobile140", s : "We are all fragile." },
-  { id : "mobile148", s : "I would like to attend if so." },
-  { id : "mobile155", s : "I can return earlier." },
-  { id : "mobile156", s : "I am trying again." },
-  { id : "mobile174", s : "I will bring John Brindle." },
-  { id : "mobile193", s : "He would love anything about rocks." },
-  { id : "mobile198", s : "What do you hear?" },
-  { id : "mobile212", s : "Hope your trip to Florida was good." },
-  { id : "mobile226", s : "What's his problem?" },
-  { id : "mobile228", s : "She called and wants to come over this AM." },
-  { id : "mobile229", s : "There is now a meeting at 8PM as well." },
-  { id : "mobile232", s : "See you soon!" },
-  { id : "mobile281", s : "It reads like she is in." },
-  { id : "mobile291", s : "Has Dynegy made a specific request?" },
-  { id : "mobile292", s : "I am walking in now." },
-  { id : "mobile294", s : "They have capacity now." },
-  { id : "mobile310", s : "A gift isn't necessary." },
-  { id : "mobile313", s : "Tell her to get my expense report done." },
-  { id : "mobile314", s : "I am out of town on business tonight." },
-  { id : "mobile319", s : "I'm waiting until she comes home." },
-  { id : "mobile320", s : "Not even close." },
-  { id : "mobile329", s : "Chris Foster is in!" },
-  { id : "mobile334", s : "They are more efficiently pooled." },
-  { id : "mobile404", s : "Could you try ringing her?" },
-  { id : "mobile409", s : "Do you need it today?" },
-  { id : "mobile429", s : "Keep me posted!" },
-  { id : "mobile434", s : "John this message concerns me." },
-  { id : "mobile464", s : "Call me to give me a heads up." },
-  { id : "mobile467", s : "And leave my school alone." },
-  { id : "mobile479", s : "What is in the plan?" },
-  { id : "mobile539", s : "Where do you want to meet to walk over there?" },
-  { id : "mobile561", s : "I am almost speechless." },
-  { id : "mobile563", s : "Ava, please put me on the list." },
-  { id : "mobile564", s : "Suggest you get facts before judging anyone." }
-];
+    dataset = [];
 
 var TypeTestHandler = function(app) {
   this.app = app;
@@ -68,48 +26,72 @@ var TypeTestHandler = function(app) {
   this.currentCharPos = 0;
 };
 
+TypeTestHandler.prototype.CONTENT_PANEL_ELEMENT_ID = 'content-panel';
+TypeTestHandler.prototype.LOADING_PANEL_ELEMENT_ID = 'loading-panel';
 TypeTestHandler.prototype.STATUS_ELEMENT_ID = 'type-test-status';
 TypeTestHandler.prototype.CURRENT_SENTENCE_ELEMENT_ID = 'type-test-current-sentence';
 
 TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions) {
+  if(this._starting || this._started){
+    return;
+  }
+
   this._starting = true;
   this.currentSentenceSpan = document.getElementById(this.CURRENT_SENTENCE_ELEMENT_ID);
   this.statusSpan = document.getElementById(this.STATUS_ELEMENT_ID);
+  this.contentPanel = document.getElementById(this.CONTENT_PANEL_ELEMENT_ID);
+  this.loadingPanel = document.getElementById(this.LOADING_PANEL_ELEMENT_ID);
   this.scoreHandler = new TypeTestScoreHandler(this.app);
   this.scoreHandler.start();
 
-  this.register(keyboardDimensions, screenDimensions)
-    .then(function(resp){
-      //TODO: check response
+  Promise.all([this.register(keyboardDimensions, screenDimensions), this.getDataSet()])
+  .then(function() {
+    //tell touchtrack to start tracking keys
+    this.app.postMessage({
+      api: 'touchTrack',
+      method: 'startTracking'
+    });
+    
+    //init first sentence
+    if(!dataset || !dataset.length){
+      throw new Error('TypeTestHandler: No dataset');  
+    }
 
-      this._typeTestSessionId = resp;
+    this._setNewSentence(dataset[0]);
 
-      //tell touchtrack to start tracking keys
-      this.app.postMessage({
-        api: 'touchTrack',
-        method: 'startTracking'
-      });
+    this.loadingPanel.style.display = 'none';
+    this.contentPanel.style.display = '';
 
-      //init first sentence
-      if(dataset && dataset.length){
-        this._setNewSentence(dataset[0]);
-      }
+    this._started = true;
+    this._starting = false;
+  }.bind(this), function(e) {
+    //TODO: do something with the error?
+    this.statusSpan.innerHTML = e;
+    this._starting = false;
 
-      this._started = true;
-    }.bind(this)).catch(function (e) {
-      //TODO: do something with the error?
-      this.statusSpan.innerHTML = e;
-      this._starting = false;
-    }.bind(this));
+    return new Error('TypeTestHandler: registration failed' + e);
+  }.bind(this));
 };
 
-function doXHR(url, dataObject){
+function getJSON(url){
+  return doXHR('get', url);
+}
+
+function doPOST(url, dataObject){
+  return doXHR('post', url, dataObject);
+}
+  
+function doXHR(method, url, dataObject){
   return new Promise(function(resolve, reject) {
-    var jsonString = JSON.stringify(dataObject);
+    var jsonString;
     var xhr = new window.XMLHttpRequest({mozSystem: true});
-    xhr.open('post', url, true);
-    xhr.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
-    xhr.setRequestHeader('Content-length', jsonString.length);
+    xhr.open(method, url, true);
+
+    if(dataObject){
+      jsonString = JSON.stringify(dataObject);
+      xhr.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
+    }
+    
     xhr.addEventListener('load', transferDone, false);
     xhr.addEventListener('error', transferDone, false);
     xhr.addEventListener('abort', transferDone, false);
@@ -135,14 +117,25 @@ TypeTestHandler.prototype.register = function(resizeArgs, screenDimensions) {
   //TODO validate data
 
   //send data to server
-  return doXHR('/api/register/', { resizeArgs : resizeArgs, screenDimensions: screenDimensions });
+  return doPOST('/api/register/', { resizeArgs : resizeArgs, screenDimensions: screenDimensions })
+  .then(function(resp){
+      //TODO: check response
+      this._typeTestSessionId = resp;
+    }.bind(this));
 };
+
+TypeTestHandler.prototype.getDataSet = function() {
+  return getJSON('/dataset/mem1.json')
+  .then(function(resp){
+      dataset = JSON.parse(resp);
+    }.bind(this));
+}
 
 TypeTestHandler.prototype.sendResultToServer = function(resultSentenceObj) {
   //TODO validate data
 
   //send data to server
-  return doXHR('/api/sentence/' + this._typeTestSessionId, resultSentenceObj);
+  return doPOST('/api/sentence/' + this._typeTestSessionId, resultSentenceObj);
 };
 
 TypeTestHandler.prototype.processLog = function(logMessage) {
@@ -167,19 +160,17 @@ TypeTestHandler.prototype.processLog = function(logMessage) {
 
   //fetch new sentence
   setTimeout(function(){
-    var idx = dataset.indexOf(currentResultObject.sentence);
-    if(dataset.length <= ++idx)
+    if(!dataset.length)
       this.statusSpan.innerHTML = "You are done woohooo!";
     else
-      this._setNewSentence(dataset[idx]);
+      this._setNewSentence();
   }.bind(this), 200);
 }
 
-TypeTestHandler.prototype._setNewSentence = function(newSentenceObj) {
-  //TODO: create sentence object
-  if(typeof newSentenceObj === "string")
-    throw new Error('Expect sentence object');
-
+TypeTestHandler.prototype._setNewSentence = function() {
+  //get new sentence from dataset
+  var newSentenceObj = dataset.splice(Math.floor(Math.random()*dataset.length),1)[0];
+  
   //reset keyboard to initial state
   this.app.inputMethodHandler.clear();
   this.app.postMessage({
@@ -192,6 +183,7 @@ TypeTestHandler.prototype._setNewSentence = function(newSentenceObj) {
     textAfterCursor: ''
   });
 
+  //create result object to store results in
   var sentenceResult = new SentenceResult(newSentenceObj);
   results.set(sentenceResult.id, sentenceResult);
   this.currentResultId = sentenceResult.id;
@@ -247,7 +239,7 @@ TypeTestHandler.prototype.checkInputChar = function(char){
       this._endCurrentSentence();
     }
     
-    //make next char big boned
+    //show progress on UI (make part of the sentence bold)
     window.requestAnimationFrame(function() {
       var spanEl = this.currentSentenceSpan;
       //remove current text
