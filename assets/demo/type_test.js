@@ -29,7 +29,8 @@ var TypeTestHandler = function(app) {
 TypeTestHandler.prototype.CONTENT_PANEL_ELEMENT_ID = 'content-panel';
 TypeTestHandler.prototype.LOADING_PANEL_ELEMENT_ID = 'loading-panel';
 TypeTestHandler.prototype.STATUS_ELEMENT_ID = 'type-test-status';
-TypeTestHandler.prototype.CURRENT_SENTENCE_ELEMENT_ID = 'type-test-current-sentence';
+TypeTestHandler.prototype.FINISHED_SENTENCE_ELEMENT_ID = 'type-test-finished-sentence-part';
+TypeTestHandler.prototype.REMAINING_SENTENCE_ELEMENT_ID = 'type-test-remaining-sentence-part';
 
 TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions) {
   if(this._starting || this._started){
@@ -37,7 +38,8 @@ TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions)
   }
 
   this._starting = true;
-  this.currentSentenceSpan = document.getElementById(this.CURRENT_SENTENCE_ELEMENT_ID);
+  this.remainingSentencePartSpan = document.getElementById(this.REMAINING_SENTENCE_ELEMENT_ID);
+  this.finishedSentencePartSpan = document.getElementById(this.FINISHED_SENTENCE_ELEMENT_ID);
   this.statusSpan = document.getElementById(this.STATUS_ELEMENT_ID);
   this.contentPanel = document.getElementById(this.CONTENT_PANEL_ELEMENT_ID);
   this.loadingPanel = document.getElementById(this.LOADING_PANEL_ELEMENT_ID);
@@ -57,7 +59,7 @@ TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions)
       throw new Error('TypeTestHandler: No dataset');  
     }
 
-    this._setNewSentence(dataset[0]);
+    this._setNewSentence();
 
     this.loadingPanel.style.display = 'none';
     this.contentPanel.style.display = '';
@@ -187,7 +189,8 @@ TypeTestHandler.prototype._setNewSentence = function() {
   var sentenceResult = new SentenceResult(newSentenceObj);
   results.set(sentenceResult.id, sentenceResult);
   this.currentResultId = sentenceResult.id;
-  this.currentSentenceSpan.innerHTML = newSentenceObj.s;
+  this.finishedSentencePartSpan.innerHTML = '';
+  this.remainingSentencePartSpan.innerHTML = newSentenceObj.s;
   this.currentCharPos = 0;
 };
 
@@ -219,19 +222,21 @@ TypeTestHandler.prototype.checkInputChar = function(char){
     if(sentence.length <= this.currentCharPos)
       return;
 
+    //User started typing
     if(this.currentCharPos === 0){
       this.scoreHandler.hideScore();
       this.scoreHandler.startProgressBar(sentence.length);
     }
 
     //check if input char is correct
+    var isWrongChar = false;
     if(sentence[this.currentCharPos] !== char){
-      console.log('Wrong char');
-
+      isWrongChar = true;
       result.wrongCharCount++;
+
+      console.log('Wrong char');
       if(window.navigator.vibrate)
         window.navigator.vibrate(50);
-      return;
     }
 
     //check if we have to end the current sentence
@@ -241,17 +246,43 @@ TypeTestHandler.prototype.checkInputChar = function(char){
     
     //show progress on UI (make part of the sentence bold)
     window.requestAnimationFrame(function() {
-      var spanEl = this.currentSentenceSpan;
-      //remove current text
-      while(spanEl.lastChild){
-        spanEl.removeChild(spanEl.lastChild);
+      var remainingText = sentence.slice(this.currentCharPos),
+          currentChar = sentence.slice(this.currentCharPos-1, this.currentCharPos),
+          finishedEl = this.finishedSentencePartSpan,
+          remainingEl = this.remainingSentencePartSpan;
+
+      //first remove remaining sentence
+      if(remainingEl.lastChild)
+        remainingEl.removeChild(remainingEl.lastChild);
+
+      //want to show wrong spaces as underscores
+      if(isWrongChar && /\s/.test(currentChar))
+        currentChar = '_';
+
+      //if next char is space, show underscore
+      if(remainingText.length && /\s/.test(remainingText.slice(0,1)))
+        remainingText = remainingText.replace(' ','_');
+
+      //add remaining sentence to span
+      remainingEl.appendChild(document.createTextNode(remainingText));
+      debugger;
+      var lastStrongEl;
+      if(!finishedEl.lastChild || finishedEl.lastChild.tagName.toLowerCase() !== 'strong'){
+        lastStrongEl = document.createElement('strong');
+        lastStrongEl.classList.add(isWrongChar ? "text-danger" : "text-success");
+        finishedEl.appendChild(lastStrongEl);
+      } else {
+        lastStrongEl = finishedEl.lastChild;
       }
 
-      //add new text with already typed part as strong
-      var strEl = document.createElement('strong');
-      strEl.appendChild(document.createTextNode(sentence.slice(0, this.currentCharPos)))
-      spanEl.appendChild(strEl);
-      spanEl.appendChild(document.createTextNode(sentence.slice(this.currentCharPos)));
+      if(lastStrongEl.classList.contains(isWrongChar ? "text-danger" : "text-success")){
+        lastStrongEl.appendChild(document.createTextNode(currentChar));
+      } else {
+        var newStrongEl = document.createElement('strong');
+        newStrongEl.classList.add(isWrongChar ? "text-danger" : "text-success");
+        newStrongEl.appendChild(document.createTextNode(currentChar));
+        finishedEl.appendChild(newStrongEl)
+      }
     }.bind(this));
 
     return;

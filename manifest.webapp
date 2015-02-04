@@ -16,5 +16,7 @@
         "systemXHR": { "description": "Required to make Ajax Calls over the Network" }
     },
     "fullscreen": "true",
-    "orientation": [ "portrait-primary" ]
+    "orientation": [ "portrait-primary" ],
+    "start_url": "/index.html",
+    "display": "fullscreen"
 }

@@ -146,3 +146,10 @@ body > *:not(.container) {
   -webkit-animation: blink-caret 1s step-end infinite;
   animation: blink-caret 1s step-end infinite;
 }
+
+#type-test-remaining-sentence-part::first-letter {
+  font-weight: bold;
+}
+#type-test-remaining-sentence-part {
+  display:inline-block
+}
