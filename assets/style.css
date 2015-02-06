@@ -153,3 +153,15 @@ body > *:not(.container) {
 #type-test-remaining-sentence-part {
   display:inline-block
 }
+
+.sentence{
+    word-spacing: -3px;
+    letter-spacing: -3px;
+    width:100%;
+  }
+.sentence span{
+  word-spacing: normal;
+  letter-spacing: normal;
+  display: inline-block;
+  width:100%;
+}

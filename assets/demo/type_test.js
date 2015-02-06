@@ -1,3 +1,6 @@
+/* global TypeTestScoreHandler, Utils */
+/* exported TypeTestHandler */
+
 'use strict';
 
 (function(exports) {
@@ -43,12 +46,14 @@ TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions)
   this.statusSpan = document.getElementById(this.STATUS_ELEMENT_ID);
   this.contentPanel = document.getElementById(this.CONTENT_PANEL_ELEMENT_ID);
   this.loadingPanel = document.getElementById(this.LOADING_PANEL_ELEMENT_ID);
-  this.scoreHandler = new TypeTestScoreHandler(this.app);
-  this.scoreHandler.start();
+  this.resetLink = document.getElementById('reset-link');
+  this.resetLink.addEventListener('click', function(){
+    window.location.reload()
+  });
 
-  Promise.all([this.register(keyboardDimensions, screenDimensions), this.getDataSet()])
+  Promise.all([this._register(keyboardDimensions, screenDimensions), this._getDataSet()])
   .then(function() {
-    //tell touchtrack to start tracking keys
+    //tell touchtrack were ready, so start tracking keys
     this.app.postMessage({
       api: 'touchTrack',
       method: 'startTracking'
@@ -58,6 +63,10 @@ TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions)
     if(!dataset || !dataset.length){
       throw new Error('TypeTestHandler: No dataset');  
     }
+
+    //start score handler
+    this.scoreHandler = new TypeTestScoreHandler(this, dataset.length, 10);
+    this.scoreHandler.start();
 
     this._setNewSentence();
 
@@ -75,71 +84,6 @@ TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions)
   }.bind(this));
 };
 
-function getJSON(url){
-  return doXHR('get', url);
-}
-
-function doPOST(url, dataObject){
-  return doXHR('post', url, dataObject);
-}
-  
-function doXHR(method, url, dataObject){
-  return new Promise(function(resolve, reject) {
-    var jsonString;
-    var xhr = new window.XMLHttpRequest({mozSystem: true});
-    xhr.open(method, url, true);
-
-    if(dataObject){
-      jsonString = JSON.stringify(dataObject);
-      xhr.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
-    }
-    
-    xhr.addEventListener('load', transferDone, false);
-    xhr.addEventListener('error', transferDone, false);
-    xhr.addEventListener('abort', transferDone, false);
-
-    function transferDone(ev) {
-      if(xhr.status === 200){
-          resolve(xhr.response);
-      } else {
-          reject(xhr.response);
-      }
-    }
-
-    try {
-        xhr.send(jsonString);
-      } catch (e) {
-        reject(e);
-        return;
-      }
-  }.bind(this));
-}
-
-TypeTestHandler.prototype.register = function(resizeArgs, screenDimensions) {
-  //TODO validate data
-
-  //send data to server
-  return doPOST('/api/register/', { resizeArgs : resizeArgs, screenDimensions: screenDimensions })
-  .then(function(resp){
-      //TODO: check response
-      this._typeTestSessionId = resp;
-    }.bind(this));
-};
-
-TypeTestHandler.prototype.getDataSet = function() {
-  return getJSON('/dataset/mem1.json')
-  .then(function(resp){
-      dataset = JSON.parse(resp);
-    }.bind(this));
-}
-
-TypeTestHandler.prototype.sendResultToServer = function(resultSentenceObj) {
-  //TODO validate data
-
-  //send data to server
-  return doPOST('/api/sentence/' + this._typeTestSessionId, resultSentenceObj);
-};
-
 TypeTestHandler.prototype.processLog = function(logMessage) {
   var logData = logMessage.logData;
   var currentResultObject = results.get(logMessage.data.id);
@@ -150,7 +94,7 @@ TypeTestHandler.prototype.processLog = function(logMessage) {
   currentResultObject.typedSequence = this.app.inputMethodHandler._currentText;
   currentResultObject.data = logData;
   console.log(currentResultObject);
-  this.sendResultToServer(currentResultObject)
+  this._sendResultToServer(currentResultObject)
     .then(function success(response) {
         currentResultObject.uploaded = true;
     },function error(e) {
@@ -158,7 +102,8 @@ TypeTestHandler.prototype.processLog = function(logMessage) {
     });
 
   //calculate score
-  this.scoreHandler.showScore(currentResultObject);
+  this.scoreHandler.addSentence(currentResultObject);
+  this.scoreHandler.showScore();
 
   //fetch new sentence
   setTimeout(function(){
@@ -168,6 +113,82 @@ TypeTestHandler.prototype.processLog = function(logMessage) {
       this._setNewSentence();
   }.bind(this), 200);
 }
+
+TypeTestHandler.prototype.checkInputChar = function(char){
+    if(!this._started)
+      return;
+
+    var result = results.get(this.currentResultId);
+    if(!result)
+      throw new Error('TypeTest: Can\'t find current sentence.');
+
+    var sentence = result.sentence.s;
+    if(sentence.length <= this.currentCharPos)
+      return;
+
+    //User just started typing
+    if(this.currentCharPos === 0){
+      this.scoreHandler.hideScore();
+      this.scoreHandler.startProgressBar(sentence.length);
+    }
+
+    //check if input char is correct
+    var isWrongChar = false;
+    if(sentence[this.currentCharPos] !== char){
+      isWrongChar = true;
+      result.wrongCharCount++;
+
+      console.log('Wrong char');
+      if(window.navigator.vibrate)
+        window.navigator.vibrate(50);
+    }
+
+    //check if we have to end the current sentence
+    if(sentence.length <= ++this.currentCharPos){
+      this._endCurrentSentence();
+    }
+    
+    //show progress on UI (make part of the sentence bold)
+    this._drawUISentence(this.currentCharPos, isWrongChar, sentence);
+};
+
+TypeTestHandler.prototype.timeIsUp = function() {
+  this._started = false;
+
+  this.app.postMessage({
+    api: 'touchTrack',
+    method: 'stopTracking'
+  });
+
+  this.app.removeFocus();
+  this.scoreHandler.showScore();
+  this.resetLink.style.display = '';
+};
+
+TypeTestHandler.prototype._register = function(resizeArgs, screenDimensions) {
+  //TODO validate data
+
+  //send data to server
+  return Utils.postJSON('/api/register/', { resizeArgs : resizeArgs, screenDimensions: screenDimensions })
+  .then(function(resp){
+      //TODO: check response
+      this._typeTestSessionId = resp;
+    }.bind(this));
+};
+
+TypeTestHandler.prototype._getDataSet = function() {
+  return Utils.getJSON('/dataset/mem1.json')
+  .then(function(resp){
+      dataset = JSON.parse(resp);
+    }.bind(this));
+}
+
+TypeTestHandler.prototype._sendResultToServer = function(resultSentenceObj) {
+  //TODO validate data
+
+  //send data to server
+  return Utils.postJSON('/api/sentence/' + this._typeTestSessionId, resultSentenceObj);
+};
 
 TypeTestHandler.prototype._setNewSentence = function() {
   //get new sentence from dataset
@@ -197,6 +218,8 @@ TypeTestHandler.prototype._setNewSentence = function() {
 TypeTestHandler.prototype._endCurrentSentence = function() {
   console.log('TypeTestHandler: End current sentence');
 
+  this.scoreHandler.stopProgressBar();
+
   if(window.navigator.vibrate)
     window.navigator.vibrate(400);
   
@@ -206,51 +229,15 @@ TypeTestHandler.prototype._endCurrentSentence = function() {
     method: 'getLogAndClear',
     id: this.currentResultId
   });
-
-  this.scoreHandler.stopProgressBar();
 };
 
-TypeTestHandler.prototype.checkInputChar = function(char){
-    if(!this._started)
-      return;
-
-    var result = results.get(this.currentResultId);
-    if(!result)
-      throw new Error('TypeTest: Can\'t find current sentence.');
-
-    var sentence = result.sentence.s;
-    if(sentence.length <= this.currentCharPos)
-      return;
-
-    //User started typing
-    if(this.currentCharPos === 0){
-      this.scoreHandler.hideScore();
-      this.scoreHandler.startProgressBar(sentence.length);
-    }
-
-    //check if input char is correct
-    var isWrongChar = false;
-    if(sentence[this.currentCharPos] !== char){
-      isWrongChar = true;
-      result.wrongCharCount++;
-
-      console.log('Wrong char');
-      if(window.navigator.vibrate)
-        window.navigator.vibrate(50);
-    }
-
-    //check if we have to end the current sentence
-    if(sentence.length <= ++this.currentCharPos){
-      this._endCurrentSentence();
-    }
-    
-    //show progress on UI (make part of the sentence bold)
-    window.requestAnimationFrame(function() {
-      var remainingText = sentence.slice(this.currentCharPos),
-          currentChar = sentence.slice(this.currentCharPos-1, this.currentCharPos),
+TypeTestHandler.prototype._drawUISentence = function(cp, iwc, s) {
+  window.requestAnimationFrame(function(charPos, isWrongChar, sentence) {
+      var remainingText = s.slice(charPos),
+          currentChar = s.slice(charPos-1, charPos),
           finishedEl = this.finishedSentencePartSpan,
           remainingEl = this.remainingSentencePartSpan;
-
+          
       //first remove remaining sentence
       if(remainingEl.lastChild)
         remainingEl.removeChild(remainingEl.lastChild);
@@ -264,8 +251,8 @@ TypeTestHandler.prototype.checkInputChar = function(char){
         remainingText = remainingText.replace(' ','_');
 
       //add remaining sentence to span
-      remainingEl.appendChild(document.createTextNode(remainingText));
-      debugger;
+      remainingEl.textContent = remainingText;
+      
       var lastStrongEl;
       if(!finishedEl.lastChild || finishedEl.lastChild.tagName.toLowerCase() !== 'strong'){
         lastStrongEl = document.createElement('strong');
@@ -276,16 +263,14 @@ TypeTestHandler.prototype.checkInputChar = function(char){
       }
 
       if(lastStrongEl.classList.contains(isWrongChar ? "text-danger" : "text-success")){
-        lastStrongEl.appendChild(document.createTextNode(currentChar));
+        lastStrongEl.textContent += currentChar;
       } else {
         var newStrongEl = document.createElement('strong');
         newStrongEl.classList.add(isWrongChar ? "text-danger" : "text-success");
         newStrongEl.appendChild(document.createTextNode(currentChar));
         finishedEl.appendChild(newStrongEl)
       }
-    }.bind(this));
-
-    return;
+    }.bind(this, cp, iwc, s));
 };
 
 exports.TypeTestHandler = TypeTestHandler;

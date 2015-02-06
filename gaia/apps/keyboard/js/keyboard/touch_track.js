@@ -79,7 +79,7 @@
             console.log('TouchTrack: startTracking');
             this._isTracking = true;
             break;
-          case '':
+          case 'stopTracking':
             console.log('TouchTrack: stopTracking')
             this._isTracking = false;
             break;

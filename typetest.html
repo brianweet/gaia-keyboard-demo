@@ -21,6 +21,7 @@
   <script defer src="assets/demo/input_method_handler.js"></script>
   <script defer src="assets/demo/settings.js"></script>
   <script defer src="assets/demo/layouts.js"></script>
+  <script defer src="assets/demo/utils.js"></script>
   <script defer src="assets/demo/type_test_score_handler.js"></script>
   <script defer src="assets/demo/type_test.js"></script>
   <script defer src="assets/demo/app.js"></script>
@@ -31,19 +32,23 @@
     Loading
   </div>
   <div class="container" id="content-panel" style="display:none">
-    <p>
-      <strong>Type this sentence</strong><br/>
-      <span id="type-test-finished-sentence-part"></span><span id="type-test-remaining-sentence-part"></span>
-    </p>
+    <div class="sentence">
+      <span id="type-test-remaining-sentence-part"></span>
+      <span id="type-test-finished-sentence-part"></span>
+    </div>
 
     <div class="progress">
       <div id="progress-bar" class="progress-bar progress-bar-success" role="progressbar" style="width: 100%">
       </div>
     </div>
 
+    <div class="alert alert-info" role="alert">
+      <strong>Current level</strong> <span id="type-test-current-level"></span>
+    </div>
+
     <span id="type-test-status"></span>
 
-    <div id="score-panel" style="display:none;">
+    <div id="score-panel" class="well well-sm" style="display:none;">
       <table class="table table-condensed">
         <thead>
           <tr>
@@ -56,13 +61,13 @@
             <td scope="row">
               <span id="correct-cpm" class="label label-success">0</span>
               |
-              <span id="wrong-cpm" class="label label-danger">0</span>
+              <span id="error-percentage" class="label label-danger">0%</span>
               CPM
             </td>
             <td>
               <span id="correct-cpm-total" class="label label-success">0</span>
               |
-              <span id="wrong-cpm-total" class="label label-danger">0</span>
+              <span id="error-percentage-total" class="label label-danger">0%</span>
               CPM
             </td>
           </tr>
@@ -83,6 +88,7 @@
         </tbody>
       </table>
       <span id="last-sentence">
+      <a id="reset-link" href="/typetest.html" style="display:none">reset</a>
       </span>
     </div>
     <div id="inputarea" dir="auto" style="display:none;">

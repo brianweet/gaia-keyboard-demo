@@ -62,7 +62,6 @@ KeyboardDemoApp.prototype.getFocus = function() {
 };
 
 KeyboardDemoApp.prototype.removeFocus = function() {
-  return;
   if (!this.focused) {
     return;
   }
