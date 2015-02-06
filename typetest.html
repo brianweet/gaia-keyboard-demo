@@ -39,11 +39,9 @@
 
     <div class="progress">
       <div id="progress-bar" class="progress-bar progress-bar-success" role="progressbar" style="width: 100%">
+        <strong>Current level</strong>
+        <span id="type-test-current-level"></span>
       </div>
-    </div>
-
-    <div class="alert alert-info" role="alert">
-      <strong>Current level</strong> <span id="type-test-current-level"></span>
     </div>
 
     <span id="type-test-status"></span>
@@ -87,10 +85,18 @@
           </tr>
         </tbody>
       </table>
+
       <span id="last-sentence">
-      <a id="reset-link" href="/typetest.html" style="display:none">reset</a>
       </span>
     </div>
+    <div id="done-panel" style="display:none;">
+      <h4>Well done!</h4>
+      <!-- <h4>Well done, you can submit your result to the scoreboard</h4>
+      <input placeholder="Your (nick)name" />
+      <button id="submit-button" >submit</button> -->
+      <a id="reset-link" href="/typetest.html">reset</a>
+    </div>
+
     <div id="inputarea" dir="auto" style="display:none;">
       <span id="inputtext"></span><span id="composition"></span>
     </div>

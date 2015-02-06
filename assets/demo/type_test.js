@@ -46,11 +46,7 @@ TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions)
   this.statusSpan = document.getElementById(this.STATUS_ELEMENT_ID);
   this.contentPanel = document.getElementById(this.CONTENT_PANEL_ELEMENT_ID);
   this.loadingPanel = document.getElementById(this.LOADING_PANEL_ELEMENT_ID);
-  this.resetLink = document.getElementById('reset-link');
-  this.resetLink.addEventListener('click', function(){
-    window.location.reload()
-  });
-
+  
   Promise.all([this._register(keyboardDimensions, screenDimensions), this._getDataSet()])
   .then(function() {
     //tell touchtrack were ready, so start tracking keys
@@ -102,15 +98,17 @@ TypeTestHandler.prototype.processLog = function(logMessage) {
     });
 
   //calculate score
-  this.scoreHandler.addSentence(currentResultObject);
+  this.scoreHandler.addCompletedSentence(currentResultObject);
   this.scoreHandler.showScore();
 
   //fetch new sentence
   setTimeout(function(){
-    if(!dataset.length)
+    if(!dataset.length){
       this.statusSpan.innerHTML = "You are done woohooo!";
-    else
+      this.timeIsUp();
+    } else{
       this._setNewSentence();
+    }
   }.bind(this), 200);
 }
 
@@ -128,8 +126,7 @@ TypeTestHandler.prototype.checkInputChar = function(char){
 
     //User just started typing
     if(this.currentCharPos === 0){
-      this.scoreHandler.hideScore();
-      this.scoreHandler.startProgressBar(sentence.length);
+      this.scoreHandler.startTyping(sentence.length);
     }
 
     //check if input char is correct
@@ -162,14 +159,14 @@ TypeTestHandler.prototype.timeIsUp = function() {
 
   this.app.removeFocus();
   this.scoreHandler.showScore();
-  this.resetLink.style.display = '';
+  this.scoreHandler.showDonePanel();
 };
 
 TypeTestHandler.prototype._register = function(resizeArgs, screenDimensions) {
   //TODO validate data
 
   //send data to server
-  return Utils.postJSON('/api/register/', { resizeArgs : resizeArgs, screenDimensions: screenDimensions })
+  return Utils.postJSON('/api/register/', { resizeArgs : resizeArgs, screenDimensions: screenDimensions, userAgent: navigator.userAgent })
   .then(function(resp){
       //TODO: check response
       this._typeTestSessionId = resp;
@@ -213,12 +210,15 @@ TypeTestHandler.prototype._setNewSentence = function() {
   this.finishedSentencePartSpan.innerHTML = '';
   this.remainingSentencePartSpan.innerHTML = newSentenceObj.s;
   this.currentCharPos = 0;
+
+  //
+  this.scoreHandler.updateLevel();
 };
 
 TypeTestHandler.prototype._endCurrentSentence = function() {
   console.log('TypeTestHandler: End current sentence');
 
-  this.scoreHandler.stopProgressBar();
+  this.scoreHandler.stopTyping();
 
   if(window.navigator.vibrate)
     window.navigator.vibrate(400);

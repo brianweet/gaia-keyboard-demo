@@ -35,7 +35,6 @@
     this._container.addEventListener('touchcancel', this);
     if ('ontouchstart' in window === false){
       this._container.addEventListener('mousedown', this);
-      this._container.addEventListener('mousemove', this);
       this._container.addEventListener('mouseup', this);
     }
     
@@ -59,7 +58,6 @@
     this._container.removeEventListener('touchcancel', this);
     if ('ontouchstart' in window === false){
       this._container.removeEventListener('mousedown', this);
-      this._container.removeEventListener('mousemove', this);
       this._container.removeEventListener('mouseup', this); 
     }
 

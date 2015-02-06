@@ -15,10 +15,10 @@ var TypeTestScoreHandler = function(typeTestHandler, nrOfSentences, nrOfLevels) 
 
   this.sentencesPerLevel = nrOfSentences/nrOfLevels;
   this.currentLevel = function(){
-    return Math.floor(this.countTotalSentences / this.sentencesPerLevel) + 1;
+    return Math.floor(this.countCompletedSentences / this.sentencesPerLevel) + 1;
   };
 
-  this.countTotalSentences = 0;
+  this.countCompletedSentences = 0;
   this.countTotalTime = 0;
   this.countTotalChar = 0;
   this.countTotalWrongChar = 0;
@@ -26,6 +26,7 @@ var TypeTestScoreHandler = function(typeTestHandler, nrOfSentences, nrOfLevels) 
 };
 
 TypeTestScoreHandler.prototype.SCORE_PANEL_ELEMENT_ID = 'score-panel';
+TypeTestScoreHandler.prototype.DONE_PANEL_ELEMENT_ID = 'done-panel';
 TypeTestScoreHandler.prototype.PROGRESS_BAR_ELEMENT_ID = 'progress-bar';
 TypeTestScoreHandler.prototype.LAST_SENTENCE_ELEMENT_ID = 'last-sentence';
 TypeTestScoreHandler.prototype.LAST_CORRECT_CPM_ELEMENT_ID = 'correct-cpm';
@@ -42,15 +43,11 @@ TypeTestScoreHandler.prototype.CURRENT_LEVEL_ELEMENT_ID = 'type-test-current-lev
 TypeTestScoreHandler.prototype.MIN_CPM = 60;
 TypeTestScoreHandler.prototype.MAX_CPM = 300;
 
-TypeTestScoreHandler.prototype._getCharPerMinute = function(level){
-  var increasePerLevel = (this.MAX_CPM - this.MIN_CPM) / this.nrOfLevels;
-  return this.MIN_CPM + (level-1) * increasePerLevel;
-};
-
 TypeTestScoreHandler.prototype.start = function() {
   console.log('TypeTestScoreHandler: start');
 
   this.scorePanel = document.getElementById(this.SCORE_PANEL_ELEMENT_ID);
+  this.donePanel = document.getElementById(this.DONE_PANEL_ELEMENT_ID);
   this.currentLevelElement = document.getElementById(this.CURRENT_LEVEL_ELEMENT_ID);
   this.progressBar = document.getElementById(this.PROGRESS_BAR_ELEMENT_ID);
   this.lastSentence = document.getElementById(this.LAST_SENTENCE_ELEMENT_ID);
@@ -97,58 +94,37 @@ TypeTestScoreHandler.prototype.stop = function() {
 TypeTestScoreHandler.prototype.startTyping = function(sentenceLength) {
   console.log('TypeTestScoreHandler: startTyping');
   this.hideScore();
-  this.startProgressBar(sentenceLength);
+  this._startProgressBar(sentenceLength);
 };
 
-TypeTestScoreHandler.prototype.startProgressBar = function(sentenceLength) {
-  if(this.progressInterval !== -1)
-    throw new Error('Can\'t start progressbar if it is still running.');
-
-  var charPerMin = this._getCharPerMinute(this.currentLevel());
-  var charPerSec =  charPerMin / 60;
-  var totalMs = sentenceLength / charPerSec * 1000;
-  var updatePercent = 5;
-  var stepTime = totalMs / 100 * updatePercent;
-  var currentPercentage = 100;
-
-  this._updateUILevelIndicator(charPerMin);
-
-  this.progressInterval = setInterval(function (){
-    currentPercentage -= updatePercent;
-    this.setProgressBar(currentPercentage);
-    if(currentPercentage <= 0){
-      this.setProgressBar(0);
-      console.log('TypeTestScoreHandler: time is up!');
-      clearInterval(this.progressInterval);
-      this.progressInterval = -1;
-      this.typeTestHandler.timeIsUp();
-    } else {
-      this.setProgressBar(currentPercentage);
-    }
-  }.bind(this), stepTime);
+TypeTestScoreHandler.prototype.stopTyping = function() {
+  console.log('TypeTestScoreHandler: stopTyping');
+  this._stopProgressBar();
 };
 
-TypeTestScoreHandler.prototype.setProgressBar = function(percentage) {
-  this.progressBar.style.width = percentage + '%';
-};
-
-TypeTestScoreHandler.prototype.stopProgressBar = function() {
-  clearInterval(this.progressInterval);
-  this.progressInterval = -1;
-  this.setProgressBar(100);
+TypeTestScoreHandler.prototype.updateLevel = function() {
+  var currentLevel = this.currentLevel();
+  if(currentLevel <= this.nrOfLevels){
+    var charPerMin = this._getCharPerMinute(currentLevel, this.nrOfLevels);
+    this._updateUILevelIndicator(charPerMin, currentLevel);
+  }
 };
 
 TypeTestScoreHandler.prototype.showScore = function() {
   this.scorePanel.style.display = '';
 };
 
+TypeTestScoreHandler.prototype.showDonePanel = function() {
+  this.donePanel.style.display = '';
+};
+
 TypeTestScoreHandler.prototype.hideScore = function() {
   this.scorePanel.style.display = 'none';
 };
 
-TypeTestScoreHandler.prototype.addSentence = function(res) {
-  console.log('TypeTestScoreHandler: addSentence');
-  ++this.countTotalSentences;
+TypeTestScoreHandler.prototype.addCompletedSentence = function(res) {
+  console.log('TypeTestScoreHandler: addCompletedSentence');
+  ++this.countCompletedSentences;
   var lastTouch = res.data[res.data.length -1];
   this.countTotalTime += lastTouch.time;
   this.countTotalChar += res.sentence.s.length;
@@ -180,11 +156,52 @@ TypeTestScoreHandler.prototype.addSentence = function(res) {
   this.lastSentence.lastChild.textContent = res.typedSequence;
 };
 
-TypeTestScoreHandler.prototype._updateUILevelIndicator = function(charPerMin) {
+TypeTestScoreHandler.prototype._getCharPerMinute = function(level, nrOfLevels){
+  var increasePerLevel = (this.MAX_CPM - this.MIN_CPM) / (nrOfLevels-1);
+  return Math.floor(this.MIN_CPM + (level-1) * increasePerLevel);
+};
+
+TypeTestScoreHandler.prototype._startProgressBar = function(sentenceLength) {
+  if(this.progressInterval !== -1)
+    throw new Error('Can\'t start progressbar if it is still running.');
+
+  var charPerMin = this._getCharPerMinute(this.currentLevel(), this.nrOfLevels);
+  var charPerSec =  charPerMin / 60;
+  var totalMs = sentenceLength / charPerSec * 1000;
+  var updatePercent = 5;
+  var stepTime = totalMs / 100 * updatePercent;
+  var currentPercentage = 100;
+
+  this.progressInterval = setInterval(function (){
+    currentPercentage -= updatePercent;
+    this._setProgressBar(currentPercentage);
+    if(currentPercentage <= 0){
+      this._setProgressBar(0);
+      console.log('TypeTestScoreHandler: time is up!');
+      clearInterval(this.progressInterval);
+      this.progressInterval = -1;
+      this.typeTestHandler.timeIsUp();
+    } else {
+      this._setProgressBar(currentPercentage);
+    }
+  }.bind(this), stepTime);
+};
+
+TypeTestScoreHandler.prototype._setProgressBar = function(percentage) {
+  this.progressBar.style.width = percentage + '%';
+};
+
+TypeTestScoreHandler.prototype._stopProgressBar = function() {
+  clearInterval(this.progressInterval);
+  this.progressInterval = -1;
+  this._setProgressBar(100);
+};
+
+TypeTestScoreHandler.prototype._updateUILevelIndicator = function(charPerMin, currentLevel) {
   while(this.currentLevelElement.lastChild)
     this.currentLevelElement.removeChild(this.currentLevelElement.lastChild);
-  
-  this.currentLevelElement.appendChild(document.createTextNode(this.currentLevel() + ' ( ' + charPerMin + 'CPM )'));
+
+  this.currentLevelElement.appendChild(document.createTextNode(currentLevel + ' ( ' + charPerMin + 'CPM )'));
 };
 
 exports.TypeTestScoreHandler = TypeTestScoreHandler;
