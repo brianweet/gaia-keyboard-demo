@@ -34,6 +34,8 @@ TypeTestHandler.prototype.LOADING_PANEL_ELEMENT_ID = 'loading-panel';
 TypeTestHandler.prototype.STATUS_ELEMENT_ID = 'type-test-status';
 TypeTestHandler.prototype.FINISHED_SENTENCE_ELEMENT_ID = 'type-test-finished-sentence-part';
 TypeTestHandler.prototype.REMAINING_SENTENCE_ELEMENT_ID = 'type-test-remaining-sentence-part';
+TypeTestHandler.prototype.SUBMIT_BUTTON_ELEMENT_ID = 'submit-button';
+TypeTestHandler.prototype.NICKNAME_ELEMENT_ID = 'nickname';
 
 TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions) {
   if(this._starting || this._started){
@@ -46,6 +48,14 @@ TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions)
   this.statusSpan = document.getElementById(this.STATUS_ELEMENT_ID);
   this.contentPanel = document.getElementById(this.CONTENT_PANEL_ELEMENT_ID);
   this.loadingPanel = document.getElementById(this.LOADING_PANEL_ELEMENT_ID);
+  this.submitButton = document.getElementById(this.SUBMIT_BUTTON_ELEMENT_ID);
+  this.nicknameInput = document.getElementById(this.NICKNAME_ELEMENT_ID);
+
+  this.submitButton.addEventListener('click',function(){
+    var name = this.nicknameInput.textContent;
+    if (name)
+      this._sendNickName(name);
+  }.bind(this));
   
   Promise.all([this._register(keyboardDimensions, screenDimensions), this._getDataSet()])
   .then(function() {
@@ -160,6 +170,15 @@ TypeTestHandler.prototype.timeIsUp = function() {
   this.app.removeFocus();
   this.scoreHandler.showScore();
   this.scoreHandler.showDonePanel();
+};
+
+TypeTestHandler.prototype._sendNickName = function(nickName) {
+  //TODO validate data
+  if(!nickName)
+    return;
+
+  //send data to server
+  return Utils.postJSON('/api/nickname/' + this._typeTestSessionId, {nickname: nickName});
 };
 
 TypeTestHandler.prototype._register = function(resizeArgs, screenDimensions) {
