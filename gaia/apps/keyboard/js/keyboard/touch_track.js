@@ -21,7 +21,6 @@
   };
 
   TouchTrack.prototype.start = function(){
-    console.log('TouchTrack.start()');
     if (this._started) {
       throw new Error('TouchTrack: ' +
         'Instance should not be start()\'ed twice.');
@@ -45,7 +44,6 @@
   }
 
   TouchTrack.prototype.stop = function(){
-    console.log('TouchTrack.stop()');
     if (!this._started) {
       throw new Error('TouchTrack: ' +
         'Instance was never start()\'ed but stop() is called.');
@@ -74,15 +72,12 @@
 
         switch(data.method){
           case 'startTracking':
-            console.log('TouchTrack: startTracking');
             this._isTracking = true;
             break;
           case 'stopTracking':
-            console.log('TouchTrack: stopTracking')
             this._isTracking = false;
             break;
           case 'getLogAndClear':
-            console.log('TouchTrack: getLogAndClear');
             evt.source.postMessage({
               api: data.api,
               logData: trackedTouches,
@@ -103,7 +98,12 @@
           return;
 
         var eventTime = Date.now();
+        //check if we are going to start tracking
         if(trackedTouches.length === 0){
+          //don't want to start tracking if user switches layouts
+          if(evt.target.classList.contains('special-key'))
+            return;
+
           startTime = eventTime;
         }
         var time = eventTime - startTime;

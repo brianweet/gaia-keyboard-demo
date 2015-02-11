@@ -39,6 +39,7 @@ TypeTestHandler.prototype.STATUS_ELEMENT_ID = 'type-test-status';
 TypeTestHandler.prototype.NICKNAME_ELEMENT_ID = 'nickname';
 TypeTestHandler.prototype.SUBMIT_BUTTON_ELEMENT_ID = 'submit-button';
 TypeTestHandler.prototype.SUBMIT_STATUS_ELEMENT_ID = 'submit-status';
+TypeTestHandler.prototype.HIGHSCORE_BUTTON_ELEMENT_ID = 'highscore-button';
 
 TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions) {
   if(this._starting || this._started){
@@ -54,8 +55,10 @@ TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions)
   this.statusSpan = document.getElementById(this.STATUS_ELEMENT_ID);
   this.submitButton = document.getElementById(this.SUBMIT_BUTTON_ELEMENT_ID);
   this.nicknameInput = document.getElementById(this.NICKNAME_ELEMENT_ID);
+  this.highscoreButton = document.getElementById(this.HIGHSCORE_BUTTON_ELEMENT_ID);
   this.submitStatus = document.getElementById(this.SUBMIT_STATUS_ELEMENT_ID);
   this.submitButton.addEventListener('click', this);
+  this.highscoreButton.addEventListener('click', this);
 
   Promise
     .all([this._register(keyboardDimensions, screenDimensions), this._getDataSet()])
@@ -110,9 +113,19 @@ TypeTestHandler.prototype.handleEvent = function(evt) {
         var name = this.nicknameInput.value;
         if (name)
           this._sendNickName(name);
+      } else if (evt.target.id === this.HIGHSCORE_BUTTON_ELEMENT_ID || evt.target.parentElement.id === this.HIGHSCORE_BUTTON_ELEMENT_ID) {
+        this._toggleHighScorePanel();
       }
 
       break;
+  }
+};
+
+TypeTestHandler.prototype._toggleHighScorePanel = function() {
+  if(this.highscorePanel.style.display === ''){
+    this.highscorePanel.style.display = 'none';
+  } else {
+    this._getHighscore();
   }
 };
 
@@ -125,7 +138,7 @@ TypeTestHandler.prototype.processLog = function(logMessage) {
   //log and save data
   currentResultObject.typedSequence = this.app.inputMethodHandler._currentText;
   currentResultObject.data = logData;
-  console.log(currentResultObject);
+
   this._sendResultToServer(currentResultObject)
     .then(function success(response) {
         currentResultObject.uploaded = true;
@@ -145,7 +158,7 @@ TypeTestHandler.prototype.processLog = function(logMessage) {
     } else{
       this._setNewSentence();
     }
-  }.bind(this), 200);
+  }.bind(this), 1000);
 }
 
 TypeTestHandler.prototype.checkInputChar = function(char){
@@ -171,7 +184,6 @@ TypeTestHandler.prototype.checkInputChar = function(char){
       isWrongChar = true;
       result.wrongCharCount++;
 
-      console.log('Wrong char');
       if(window.navigator.vibrate)
         window.navigator.vibrate(50);
     }
@@ -209,12 +221,14 @@ TypeTestHandler.prototype._sendNickName = function(nickname) {
 
   //send data to server
   return Utils.postJSON('/api/nickname/' + this._typeTestSessionId, {nickname: nickname})
-  .then(this._getHighscore.bind(this))
+  .then(function(){
+    this._getHighscore();
+  }.bind(this))
   .catch(function(e){
-    console.log(e);
     this.submitStatus.textContent = 'Something went wrong, please try to submit again';
-    this.nicknameInput.disabled = true;
-    this.submitButton.disabled = true;
+    this.nicknameInput.disabled = false;
+    this.submitButton.disabled = false;
+    console.error(e);
   }.bind(this));
 };
 
@@ -222,7 +236,6 @@ TypeTestHandler.prototype._getHighscore = function() {
   Utils.getJSON('/api/highscore')
   .then(function(resp){
     var highscores = JSON.parse(resp);
-    this.highscorePanel.style.display = '';
     var tbody = this.highscorePanel.getElementsByTagName('tbody')[0];
     
     while(tbody.lastChild)
@@ -246,8 +259,10 @@ TypeTestHandler.prototype._getHighscore = function() {
       tbody.appendChild(row);
     };
 
-  }.bind(this)).catch(function(e){
+    this.highscorePanel.style.display = '';
 
+  }.bind(this)).catch(function(e){
+      console.error(e);
   });
 };
 
@@ -312,8 +327,6 @@ TypeTestHandler.prototype._setNewSentence = function() {
 };
 
 TypeTestHandler.prototype._endCurrentSentence = function() {
-  console.log('TypeTestHandler: End current sentence');
-
   this.scoreHandler.stopTyping();
 
   if(window.navigator.vibrate)

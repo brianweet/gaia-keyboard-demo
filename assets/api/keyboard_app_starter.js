@@ -69,19 +69,7 @@ KeyboardAppStarter.prototype._startAPI = function() {
       }
       weakMapPrototypeSet.call(this, key, val);
     };
-  }
-
-  //setTimeout(function(){
-  //  debugger;
-  //  if(window.app){
-  //    console.log('init TouchTrack');
-  //    this.touchTrack = new TouchTrack(window.app);
-  //    this.touchTrack.start();
-  //  }else{
-  //    console.log('could not init TouchTrack');
-  //  }
-  //},2000);
-  
+  }  
 };
 
 KeyboardAppStarter.prototype.handleEvent = function(evt) {

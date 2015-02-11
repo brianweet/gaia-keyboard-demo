@@ -21,10 +21,6 @@
     min-height: 3em;
   }
 
-  .navbar .nav, .navbar .navbar-brand {
-    display: none;
-  }
-
   .navbar select {
     margin: 10px 0;
     display: block;
@@ -162,4 +158,13 @@ body > *:not(.container) {
 #sentence mark{
 background: none;
 font-weight: bold;  
+}
+
+#highscore-panel table{
+    table-layout: fixed;
+    width: 100%;
+}
+
+#highscore-panel th,#highscore-panel td {
+    overflow: hidden;
 }

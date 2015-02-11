@@ -137,11 +137,9 @@ KeyboardDemoApp.prototype.handleMessage = function(data) {
       break;
 
     case 'touchTrack':
-      console.log('KeyboardDemoApp: handle touchTrack event');
       this.typeTestHandler.processLog(data);
       break;
     default:
-      console.log(data);
       throw new Error('KeyboardDemoApp: Unknown message.');
 
       break;

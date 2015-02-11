@@ -53,8 +53,6 @@ TypeTestScoreHandler.prototype.MIN_CPM = 60;
 TypeTestScoreHandler.prototype.MAX_CPM = 300;
 
 TypeTestScoreHandler.prototype.start = function() {
-  console.log('TypeTestScoreHandler: start');
-
   this.scorePanel = document.getElementById(this.SCORE_PANEL_ELEMENT_ID);
   this.donePanel = document.getElementById(this.DONE_PANEL_ELEMENT_ID);
   this.resetPanel = document.getElementById(this.RESET_PANEL_ELEMENT_ID);
@@ -84,18 +82,15 @@ TypeTestScoreHandler.prototype.start = function() {
 }
 
 TypeTestScoreHandler.prototype.stop = function() {
-  console.log('TypeTestScoreHandler: stop');
   clearInterval(this.progressInterval);
 };
 
 TypeTestScoreHandler.prototype.startTyping = function(sentenceLength) {
-  console.log('TypeTestScoreHandler: startTyping');
   this.hideScore();
   this._startProgressBar(sentenceLength);
 };
 
 TypeTestScoreHandler.prototype.stopTyping = function() {
-  console.log('TypeTestScoreHandler: stopTyping');
   this._stopProgressBar();
 };
 
@@ -123,7 +118,6 @@ TypeTestScoreHandler.prototype.hideScore = function() {
 };
 
 TypeTestScoreHandler.prototype.addCompletedSentence = function(res) {
-  console.log('TypeTestScoreHandler: addCompletedSentence');
   ++this.completedSentencesCount;
   var lastTouch = res.data[res.data.length -1];
   this.totalTimeCount += lastTouch.time;
@@ -186,7 +180,6 @@ TypeTestScoreHandler.prototype._startProgressBar = function(sentenceLength) {
     this._setProgressBar(currentPercentage);
     if(currentPercentage <= 0){
       this._setProgressBar(0);
-      console.log('TypeTestScoreHandler: time is up!');
       clearInterval(this.progressInterval);
       this.progressInterval = -1;
       this.typeTestHandler.timeIsUp();
