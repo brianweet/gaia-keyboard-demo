@@ -49,8 +49,11 @@ TypeTestScoreHandler.prototype.TOTAL_WRONG_CHAR_ELEMENT_ID = 'total-wrong-char';
 
 TypeTestScoreHandler.prototype.CURRENT_LEVEL_ELEMENT_ID = 'type-test-current-level';
 
+TypeTestScoreHandler.prototype.HIGHSCORE_PANEL_ELEMENT_ID = 'highscore-panel';
+TypeTestScoreHandler.prototype.HIGHSCORE_BUTTON_ELEMENT_ID = 'highscore-button';
+
 TypeTestScoreHandler.prototype.MIN_CPM = 60;
-TypeTestScoreHandler.prototype.MAX_CPM = 300;
+TypeTestScoreHandler.prototype.MAX_CPM = 260;
 
 TypeTestScoreHandler.prototype.start = function() {
   this.scorePanel = document.getElementById(this.SCORE_PANEL_ELEMENT_ID);
@@ -75,11 +78,75 @@ TypeTestScoreHandler.prototype.start = function() {
   this.totalChar = document.getElementById(this.TOTAL_CHAR_ELEMENT_ID);
   this.totalCorrectChar = document.getElementById(this.TOTAL_CORRECT_CHAR_ELEMENT_ID);
   this.totalWrongChar = document.getElementById(this.TOTAL_WRONG_CHAR_ELEMENT_ID);
-
   this.lastSentence.appendChild(document.createTextNode(''));
+
+  this.highscorePanel = document.getElementById(this.HIGHSCORE_PANEL_ELEMENT_ID);
+  this.highscoreButton = document.getElementById(this.HIGHSCORE_BUTTON_ELEMENT_ID);
+  this.highscoreButton.addEventListener('click', this);
+
+
 
   this._updateUILevelIndicator(this.MIN_CPM);
 }
+
+TypeTestScoreHandler.prototype.handleEvent = function(evt) {
+  if (!evt.target) {
+    return;
+  }
+
+  switch (evt.type) {
+    case 'click':
+      evt.preventDefault();
+
+      if (evt.target.id === this.HIGHSCORE_BUTTON_ELEMENT_ID || evt.target.parentElement.id === this.HIGHSCORE_BUTTON_ELEMENT_ID) {
+        this._toggleHighScorePanel();
+      }
+
+      break;
+  }
+};
+
+TypeTestScoreHandler.prototype.getHighscore = function() {
+  Utils.getJSON('/api/highscore')
+  .then(function(resp){
+    var highscores = JSON.parse(resp);
+    var tbody = this.highscorePanel.getElementsByTagName('tbody')[0];
+    
+    while(tbody.lastChild)
+      tbody.removeChild(tbody.lastChild);
+
+    for (var i = 0; i < highscores.length; i++) {
+      var score = highscores[i];
+
+      var row = document.createElement('tr');
+      var nn = document.createElement('td');
+      nn.appendChild(document.createTextNode(score.nickname));
+      var sc = document.createElement('td');
+      sc.appendChild(document.createTextNode(score.score));
+      var cpm = document.createElement('td');
+      cpm.appendChild(document.createTextNode(score.charPerMinute + '(' + score.error + ')'));
+      
+      row.appendChild(nn);
+      row.appendChild(sc);
+      row.appendChild(cpm);
+      
+      tbody.appendChild(row);
+    };
+
+    this.highscorePanel.style.display = '';
+
+  }.bind(this)).catch(function(e){
+      console.error(e);
+  });
+};
+
+TypeTestScoreHandler.prototype._toggleHighScorePanel = function() {
+  if(this.highscorePanel.style.display === ''){
+    this.highscorePanel.style.display = 'none';
+  } else {
+    this.getHighscore();
+  }
+};
 
 TypeTestScoreHandler.prototype.stop = function() {
   clearInterval(this.progressInterval);
@@ -107,8 +174,14 @@ TypeTestScoreHandler.prototype.showScore = function() {
 };
 
 TypeTestScoreHandler.prototype.showDonePanel = function() {
-  if(this.completedSentencesCount > 4)
+  if(this.completedSentencesCount > 4){
+    if(this.completedSentencesCount === this.nrOfSentences)
+      this.donePanel.classList.add('finished');
+    else
+      this.donePanel.classList.add('time-is-up');
+
     this.donePanel.style.display = '';
+  }
   else
     this.resetPanel.style.display = '';
 };
@@ -159,24 +232,38 @@ function getScore(time, sentenceLength, wrongCharCount){
   };
 }
 
+TypeTestScoreHandler.prototype._getCharPerSec = function(level, nrOfLevels){
+  return this._getCharPerMinute(level,nrOfLevels) / 60;
+}
+
 TypeTestScoreHandler.prototype._getCharPerMinute = function(level, nrOfLevels){
   var increasePerLevel = (this.MAX_CPM - this.MIN_CPM) / (nrOfLevels-1);
   return Math.floor(this.MIN_CPM + (level-1) * increasePerLevel);
 };
 
+TypeTestScoreHandler.prototype._getUpdatePercent = function(totalMs){
+  //keon is kinda slow
+  if(totalMs > 15000)
+    return 5;
+  if(totalMs > 10000)
+    return 10;
+  else 
+    return 20;
+}
+
 TypeTestScoreHandler.prototype._startProgressBar = function(sentenceLength) {
   if(this.progressInterval !== -1)
     throw new Error('Can\'t start progressbar if it is still running.');
 
-  var charPerMin = this._getCharPerMinute(this.currentLevel(), this.nrOfLevels);
-  var charPerSec =  charPerMin / 60;
+  var charPerSec =  this._getCharPerSec(this.currentLevel(), this.nrOfLevels);
   var totalMs = sentenceLength / charPerSec * 1000;
-  var updatePercent = 5;
+  var updatePercent = this._getUpdatePercent(totalMs);
   var stepTime = totalMs / 100 * updatePercent;
   var currentPercentage = 100;
 
   this.progressInterval = setInterval(function (){
-    currentPercentage -= updatePercent;
+    window.requestAnimationFrame(function(){
+      currentPercentage -= updatePercent;
     this._setProgressBar(currentPercentage);
     if(currentPercentage <= 0){
       this._setProgressBar(0);
@@ -186,6 +273,7 @@ TypeTestScoreHandler.prototype._startProgressBar = function(sentenceLength) {
     } else {
       this._setProgressBar(currentPercentage);
     }
+    }.bind(this));
   }.bind(this), stepTime);
 };
 

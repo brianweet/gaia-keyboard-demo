@@ -31,7 +31,7 @@ var TypeTestHandler = function(app) {
 
 TypeTestHandler.prototype.LOADING_PANEL_ELEMENT_ID = 'loading-panel';
 TypeTestHandler.prototype.CONTENT_PANEL_ELEMENT_ID = 'content-panel';
-TypeTestHandler.prototype.HIGHSCORE_PANEL_ELEMENT_ID = 'highscore-panel';
+
 TypeTestHandler.prototype.ONGOING_GAME_PANEL_ELEMENT_ID = 'ongoing-game-panel';
 TypeTestHandler.prototype.SENTENCE_ELEMENT_ID = 'sentence';
 TypeTestHandler.prototype.STATUS_ELEMENT_ID = 'type-test-status';
@@ -39,7 +39,7 @@ TypeTestHandler.prototype.STATUS_ELEMENT_ID = 'type-test-status';
 TypeTestHandler.prototype.NICKNAME_ELEMENT_ID = 'nickname';
 TypeTestHandler.prototype.SUBMIT_BUTTON_ELEMENT_ID = 'submit-button';
 TypeTestHandler.prototype.SUBMIT_STATUS_ELEMENT_ID = 'submit-status';
-TypeTestHandler.prototype.HIGHSCORE_BUTTON_ELEMENT_ID = 'highscore-button';
+
 
 TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions) {
   if(this._starting || this._started){
@@ -49,16 +49,13 @@ TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions)
   this._starting = true;
   this.loadingPanel = document.getElementById(this.LOADING_PANEL_ELEMENT_ID);
   this.contentPanel = document.getElementById(this.CONTENT_PANEL_ELEMENT_ID);
-  this.highscorePanel = document.getElementById(this.HIGHSCORE_PANEL_ELEMENT_ID);
   this.ongoingGamePanel = document.getElementById(this.ONGOING_GAME_PANEL_ELEMENT_ID);
   this.sentenceEl = document.getElementById(this.SENTENCE_ELEMENT_ID);
   this.statusSpan = document.getElementById(this.STATUS_ELEMENT_ID);
   this.submitButton = document.getElementById(this.SUBMIT_BUTTON_ELEMENT_ID);
   this.nicknameInput = document.getElementById(this.NICKNAME_ELEMENT_ID);
-  this.highscoreButton = document.getElementById(this.HIGHSCORE_BUTTON_ELEMENT_ID);
   this.submitStatus = document.getElementById(this.SUBMIT_STATUS_ELEMENT_ID);
   this.submitButton.addEventListener('click', this);
-  this.highscoreButton.addEventListener('click', this);
 
   Promise
     .all([this._register(keyboardDimensions, screenDimensions), this._getDataSet()])
@@ -113,19 +110,9 @@ TypeTestHandler.prototype.handleEvent = function(evt) {
         var name = this.nicknameInput.value;
         if (name)
           this._sendNickName(name);
-      } else if (evt.target.id === this.HIGHSCORE_BUTTON_ELEMENT_ID || evt.target.parentElement.id === this.HIGHSCORE_BUTTON_ELEMENT_ID) {
-        this._toggleHighScorePanel();
       }
 
       break;
-  }
-};
-
-TypeTestHandler.prototype._toggleHighScorePanel = function() {
-  if(this.highscorePanel.style.display === ''){
-    this.highscorePanel.style.display = 'none';
-  } else {
-    this._getHighscore();
   }
 };
 
@@ -153,7 +140,6 @@ TypeTestHandler.prototype.processLog = function(logMessage) {
   //fetch new sentence
   setTimeout(function(){
     if(!dataset.length){
-      this.statusSpan.innerHTML = "You are done woohooo!";
       this.timeIsUp();
     } else{
       this._setNewSentence();
@@ -222,7 +208,7 @@ TypeTestHandler.prototype._sendNickName = function(nickname) {
   //send data to server
   return Utils.postJSON('/api/nickname/' + this._typeTestSessionId, {nickname: nickname})
   .then(function(){
-    this._getHighscore();
+    this.scoreHandler.getHighscore();
   }.bind(this))
   .catch(function(e){
     this.submitStatus.textContent = 'Something went wrong, please try to submit again';
@@ -230,40 +216,6 @@ TypeTestHandler.prototype._sendNickName = function(nickname) {
     this.submitButton.disabled = false;
     console.error(e);
   }.bind(this));
-};
-
-TypeTestHandler.prototype._getHighscore = function() {
-  Utils.getJSON('/api/highscore')
-  .then(function(resp){
-    var highscores = JSON.parse(resp);
-    var tbody = this.highscorePanel.getElementsByTagName('tbody')[0];
-    
-    while(tbody.lastChild)
-      tbody.removeChild(tbody.lastChild);
-
-    for (var i = 0; i < highscores.length; i++) {
-      var score = highscores[i];
-
-      var row = document.createElement('tr');
-      var nn = document.createElement('td');
-      nn.appendChild(document.createTextNode(score.nickname));
-      var cpm = document.createElement('td');
-      cpm.appendChild(document.createTextNode(score.charPerMinute));
-      var err = document.createElement('td');
-      err.appendChild(document.createTextNode(score.error));
-      
-      row.appendChild(nn);
-      row.appendChild(cpm);
-      row.appendChild(err);
-
-      tbody.appendChild(row);
-    };
-
-    this.highscorePanel.style.display = '';
-
-  }.bind(this)).catch(function(e){
-      console.error(e);
-  });
 };
 
 TypeTestHandler.prototype._register = function(resizeArgs, screenDimensions) {

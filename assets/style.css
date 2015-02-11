@@ -160,6 +160,11 @@ background: none;
 font-weight: bold;  
 }
 
+.sentence-wrapper {
+  max-width: 100%;
+  word-wrap: break-word;
+}
+
 #highscore-panel table{
     table-layout: fixed;
     width: 100%;
@@ -167,4 +172,23 @@ font-weight: bold;
 
 #highscore-panel th,#highscore-panel td {
     overflow: hidden;
+}
+
+#progress-bar{
+  transition-duration: 0.15s;
+  transition-timing-function: linear;
+  background-image: none;
+  background-image: none;
+  background-image: none;
+  background-image: none;
+  background-repeat: initial;
+  background-color: #449d44;
+}
+
+#done-panel.time-is-up h4.finished{
+  display:none;
+}
+
+#done-panel.finished h4.time-is-up{
+  display:none;
 }
