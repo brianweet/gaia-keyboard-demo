@@ -29,65 +29,91 @@ var TypeTestHandler = function(app) {
   this.currentCharPos = 0;
 };
 
-TypeTestHandler.prototype.CONTENT_PANEL_ELEMENT_ID = 'content-panel';
 TypeTestHandler.prototype.LOADING_PANEL_ELEMENT_ID = 'loading-panel';
+TypeTestHandler.prototype.CONTENT_PANEL_ELEMENT_ID = 'content-panel';
+TypeTestHandler.prototype.HIGHSCORE_PANEL_ELEMENT_ID = 'highscore-panel';
+TypeTestHandler.prototype.ONGOING_GAME_PANEL_ELEMENT_ID = 'ongoing-game-panel';
+TypeTestHandler.prototype.SENTENCE_ELEMENT_ID = 'sentence';
 TypeTestHandler.prototype.STATUS_ELEMENT_ID = 'type-test-status';
-TypeTestHandler.prototype.FINISHED_SENTENCE_ELEMENT_ID = 'type-test-finished-sentence-part';
-TypeTestHandler.prototype.REMAINING_SENTENCE_ELEMENT_ID = 'type-test-remaining-sentence-part';
-TypeTestHandler.prototype.SUBMIT_BUTTON_ELEMENT_ID = 'submit-button';
+
 TypeTestHandler.prototype.NICKNAME_ELEMENT_ID = 'nickname';
+TypeTestHandler.prototype.SUBMIT_BUTTON_ELEMENT_ID = 'submit-button';
+TypeTestHandler.prototype.SUBMIT_STATUS_ELEMENT_ID = 'submit-status';
 
 TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions) {
   if(this._starting || this._started){
     return;
-  }
+  } 
 
   this._starting = true;
-  this.remainingSentencePartSpan = document.getElementById(this.REMAINING_SENTENCE_ELEMENT_ID);
-  this.finishedSentencePartSpan = document.getElementById(this.FINISHED_SENTENCE_ELEMENT_ID);
-  this.statusSpan = document.getElementById(this.STATUS_ELEMENT_ID);
-  this.contentPanel = document.getElementById(this.CONTENT_PANEL_ELEMENT_ID);
   this.loadingPanel = document.getElementById(this.LOADING_PANEL_ELEMENT_ID);
+  this.contentPanel = document.getElementById(this.CONTENT_PANEL_ELEMENT_ID);
+  this.highscorePanel = document.getElementById(this.HIGHSCORE_PANEL_ELEMENT_ID);
+  this.ongoingGamePanel = document.getElementById(this.ONGOING_GAME_PANEL_ELEMENT_ID);
+  this.sentenceEl = document.getElementById(this.SENTENCE_ELEMENT_ID);
+  this.statusSpan = document.getElementById(this.STATUS_ELEMENT_ID);
   this.submitButton = document.getElementById(this.SUBMIT_BUTTON_ELEMENT_ID);
   this.nicknameInput = document.getElementById(this.NICKNAME_ELEMENT_ID);
+  this.submitStatus = document.getElementById(this.SUBMIT_STATUS_ELEMENT_ID);
+  this.submitButton.addEventListener('click', this);
 
-  this.submitButton.addEventListener('click',function(){
-    var name = this.nicknameInput.textContent;
-    if (name)
-      this._sendNickName(name);
-  }.bind(this));
-  
-  Promise.all([this._register(keyboardDimensions, screenDimensions), this._getDataSet()])
-  .then(function() {
-    //tell touchtrack were ready, so start tracking keys
-    this.app.postMessage({
-      api: 'touchTrack',
-      method: 'startTracking'
-    });
-    
-    //init first sentence
-    if(!dataset || !dataset.length){
-      throw new Error('TypeTestHandler: No dataset');  
-    }
+  Promise
+    .all([this._register(keyboardDimensions, screenDimensions), this._getDataSet()])
+    .then(function() {
+      //tell touchtrack were ready, so start tracking keys
+      this.app.postMessage({
+        api: 'touchTrack',
+        method: 'startTracking'
+      });
+      
+      //init first sentence
+      if(!dataset || !dataset.length){
+        throw new Error('TypeTestHandler: No dataset');  
+      }
 
-    //start score handler
-    this.scoreHandler = new TypeTestScoreHandler(this, dataset.length, 10);
-    this.scoreHandler.start();
+      //start score handler
+      this.scoreHandler = new TypeTestScoreHandler(this, dataset.length, 10);
+      this.scoreHandler.start();
 
-    this._setNewSentence();
+      this._setNewSentence();
 
-    this.loadingPanel.style.display = 'none';
-    this.contentPanel.style.display = '';
+      this.loadingPanel.style.display = 'none';
+      this.contentPanel.style.display = '';
 
-    this._started = true;
-    this._starting = false;
-  }.bind(this), function(e) {
-    //TODO: do something with the error?
-    this.statusSpan.innerHTML = e;
-    this._starting = false;
+      this._started = true;
+      this._starting = false;
+    }.bind(this), function(e) {
+      //TODO: do something with the error?
+      this.statusSpan.innerHTML = 'Loading failed.. ' + e;
+      this._starting = false;
 
-    return new Error('TypeTestHandler: registration failed' + e);
-  }.bind(this));
+      throw new Error('TypeTestHandler: registration failed : ' + e);
+    }.bind(this));
+  };
+
+TypeTestHandler.prototype.stop = function() {
+  if(this.scoreHandler)
+    this.scoreHandler.stop();
+
+};
+
+TypeTestHandler.prototype.handleEvent = function(evt) {
+  if (!evt.target) {
+    return;
+  }
+
+  switch (evt.type) {
+    case 'click':
+      evt.preventDefault();
+
+      if (evt.target.id === this.SUBMIT_BUTTON_ELEMENT_ID) {
+        var name = this.nicknameInput.value;
+        if (name)
+          this._sendNickName(name);
+      }
+
+      break;
+  }
 };
 
 TypeTestHandler.prototype.processLog = function(logMessage) {
@@ -168,17 +194,61 @@ TypeTestHandler.prototype.timeIsUp = function() {
   });
 
   this.app.removeFocus();
+  this.ongoingGamePanel.style.display = 'none';
   this.scoreHandler.showScore();
   this.scoreHandler.showDonePanel();
 };
 
-TypeTestHandler.prototype._sendNickName = function(nickName) {
+TypeTestHandler.prototype._sendNickName = function(nickname) {
   //TODO validate data
-  if(!nickName)
+  if(!nickname)
     return;
 
+  this.nicknameInput.disabled = true;
+  this.submitButton.disabled = true;
+
   //send data to server
-  return Utils.postJSON('/api/nickname/' + this._typeTestSessionId, {nickname: nickName});
+  return Utils.postJSON('/api/nickname/' + this._typeTestSessionId, {nickname: nickname})
+  .then(this._getHighscore.bind(this))
+  .catch(function(e){
+    console.log(e);
+    this.submitStatus.textContent = 'Something went wrong, please try to submit again';
+    this.nicknameInput.disabled = true;
+    this.submitButton.disabled = true;
+  }.bind(this));
+};
+
+TypeTestHandler.prototype._getHighscore = function() {
+  Utils.getJSON('/api/highscore')
+  .then(function(resp){
+    var highscores = JSON.parse(resp);
+    this.highscorePanel.style.display = '';
+    var tbody = this.highscorePanel.getElementsByTagName('tbody')[0];
+    
+    while(tbody.lastChild)
+      tbody.removeChild(tbody.lastChild);
+
+    for (var i = 0; i < highscores.length; i++) {
+      var score = highscores[i];
+
+      var row = document.createElement('tr');
+      var nn = document.createElement('td');
+      nn.appendChild(document.createTextNode(score.nickname));
+      var cpm = document.createElement('td');
+      cpm.appendChild(document.createTextNode(score.charPerMinute));
+      var err = document.createElement('td');
+      err.appendChild(document.createTextNode(score.error));
+      
+      row.appendChild(nn);
+      row.appendChild(cpm);
+      row.appendChild(err);
+
+      tbody.appendChild(row);
+    };
+
+  }.bind(this)).catch(function(e){
+
+  });
 };
 
 TypeTestHandler.prototype._register = function(resizeArgs, screenDimensions) {
@@ -226,9 +296,16 @@ TypeTestHandler.prototype._setNewSentence = function() {
   var sentenceResult = new SentenceResult(newSentenceObj);
   results.set(sentenceResult.id, sentenceResult);
   this.currentResultId = sentenceResult.id;
-  this.finishedSentencePartSpan.innerHTML = '';
-  this.remainingSentencePartSpan.innerHTML = newSentenceObj.s;
   this.currentCharPos = 0;
+  var currentChar = newSentenceObj.s.slice(0,1);
+
+  while(this.sentenceEl.lastChild)
+    this.sentenceEl.removeChild(this.sentenceEl.lastChild);
+
+  var newEl = document.createElement('strong');
+  newEl.appendChild(document.createTextNode(currentChar));
+  this.sentenceEl.appendChild(newEl);
+  this.sentenceEl.appendChild(document.createTextNode(newSentenceObj.s.slice(1)));
 
   //
   this.scoreHandler.updateLevel();
@@ -251,44 +328,40 @@ TypeTestHandler.prototype._endCurrentSentence = function() {
 };
 
 TypeTestHandler.prototype._drawUISentence = function(cp, iwc, s) {
-  window.requestAnimationFrame(function(charPos, isWrongChar, sentence) {
-      var remainingText = s.slice(charPos),
-          currentChar = s.slice(charPos-1, charPos),
-          finishedEl = this.finishedSentencePartSpan,
-          remainingEl = this.remainingSentencePartSpan;
-          
-      //first remove remaining sentence
-      if(remainingEl.lastChild)
-        remainingEl.removeChild(remainingEl.lastChild);
+  window.requestAnimationFrame(
+    function(charPos, isWrongChar, sentence) {
+      var el = this.sentenceEl,
+          lastChar = s.slice(charPos-1, charPos),
+          newChar = s.slice(charPos, charPos + 1),
+          remainingText = s.slice(charPos + 1);
+      
+      //remove remaining text
+      if(el.lastChild && el.lastChild.nodeName === '#text'){
+        el.removeChild(el.lastChild);
+      }
+      //remove last strong character (want to add it as mark element)
+      if(el.lastChild && el.lastChild.nodeName.toLocaleLowerCase() === 'strong'){
+        el.removeChild(el.lastChild);
+      }
 
+      var lastCharEl = document.createElement('mark');
+      lastCharEl.classList.add(isWrongChar ? 'text-danger' : 'text-success');
+      
       //want to show wrong spaces as underscores
-      if(isWrongChar && /\s/.test(currentChar))
-        currentChar = '_';
+      if(isWrongChar && /\s/.test(lastChar))
+        lastChar = '_';
+      lastCharEl.appendChild(document.createTextNode(lastChar));
+
+      el.appendChild(lastCharEl);
 
       //if next char is space, show underscore
-      if(remainingText.length && /\s/.test(remainingText.slice(0,1)))
-        remainingText = remainingText.replace(' ','_');
-
-      //add remaining sentence to span
-      remainingEl.textContent = remainingText;
+      if(remainingText.length && /\s/.test(newChar))
+        newChar = '_';
+      var newCharEl = document.createElement('strong');
+      newCharEl.appendChild(document.createTextNode(newChar));
+      el.appendChild(newCharEl);
+      el.appendChild(document.createTextNode(remainingText));
       
-      var lastStrongEl;
-      if(!finishedEl.lastChild || finishedEl.lastChild.tagName.toLowerCase() !== 'strong'){
-        lastStrongEl = document.createElement('strong');
-        lastStrongEl.classList.add(isWrongChar ? "text-danger" : "text-success");
-        finishedEl.appendChild(lastStrongEl);
-      } else {
-        lastStrongEl = finishedEl.lastChild;
-      }
-
-      if(lastStrongEl.classList.contains(isWrongChar ? "text-danger" : "text-success")){
-        lastStrongEl.textContent += currentChar;
-      } else {
-        var newStrongEl = document.createElement('strong');
-        newStrongEl.classList.add(isWrongChar ? "text-danger" : "text-success");
-        newStrongEl.appendChild(document.createTextNode(currentChar));
-        finishedEl.appendChild(newStrongEl)
-      }
     }.bind(this, cp, iwc, s));
 };
 

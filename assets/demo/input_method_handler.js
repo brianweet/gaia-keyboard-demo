@@ -10,22 +10,11 @@ var InputMethodHandler = function(app) {
   this._currentText = '';
 };
 
-InputMethodHandler.prototype.INPUT_ELEMENT_ID = 'inputtext';
-InputMethodHandler.prototype.COMPOSITION_ELEMENT_ID = 'composition';
-
 InputMethodHandler.prototype.start = function() {
-  this.input = document.getElementById(this.INPUT_ELEMENT_ID);
-  this.input.appendChild(document.createTextNode(''));
-
-  this.composition = document.getElementById(this.COMPOSITION_ELEMENT_ID);
 };
 
 InputMethodHandler.prototype.clear = function() {
   this._text = this._currentText = '';
-  while(this.input.lastChild){
-    this.input.removeChild(this.input.lastChild);
-  }
-  this.input.appendChild(document.createTextNode(''))
 };
 
 InputMethodHandler.prototype.handleMessage = function(data) {
@@ -179,69 +168,22 @@ InputMethodHandler.prototype.handleInputMethodManagerMessage = function(data) {
 };
 
 InputMethodHandler.prototype._handleInput = function(job, str, offset, length) {
-  var container = this.input;
-  var lastChild = this.input.lastChild;
-
   switch (job) {
-    case 'updateComposition':
-      window.requestAnimationFrame(function() {
-        this.composition.textContent = str;
-      }.bind(this));
-
-      break;
-
     case 'append':
       this.app.typeTestHandler.checkInputChar(str);
       
       this._currentText += str;
-
-      window.requestAnimationFrame(function() {
-        this.composition.textContent = '';
-        if (!lastChild || lastChild.nodeName !== '#text') {
-          container.appendChild(document.createTextNode(str));
-        } else {
-          var text = lastChild.textContent + str;
-          // The witchcraft is needed because we need to use nbsp to prevent
-          // space from collapsing, but the same time we want word breaks if
-          // needed.
-          //
-          // XXX: This is not the most efficient way to do it.
-          lastChild.textContent = text.replace(/ /g, String.fromCharCode(0xA0))
-            .replace(/\xA0(\S)/g, function(m0, m1) { return ' ' + m1; });
-        }
-
-        this.composition.scrollIntoView();
-      }.bind(this));
 
       break;
 
     case 'return':
       this._currentText += '\n';
 
-      window.requestAnimationFrame(function() {
-        container.appendChild(document.createElement('br'));
-
-        this.composition.scrollIntoView();
-      }.bind(this));
-
       break;
 
     case 'backspace':
       this._currentText =
         this._currentText.substr(0, this._currentText.length - 1);
-
-      window.requestAnimationFrame(function() {
-        if ((lastChild.nodeName !== '#text' ||
-              lastChild.textContent.length === 1) &&
-            lastChild !== container.firstChild) {
-          container.removeChild(lastChild);
-        } else {
-          lastChild.textContent = lastChild.textContent
-            .substr(0, lastChild.textContent.length - 1)
-            .replace(/ /g, String.fromCharCode(0xA0))
-            .replace(/\xA0(\S)/g, function(m0, m1) { return ' ' + m1; });
-        }
-      }.bind(this));
 
       break;
 
@@ -251,27 +193,6 @@ InputMethodHandler.prototype._handleInput = function(job, str, offset, length) {
       if (offset !== - length) {
         this._currentText += text.substr(text.length + offset + length);
       }
-
-      window.requestAnimationFrame(function() {
-        if (lastChild.textContent.length < length) {
-          console.error('Unimplemented: ' +
-            'replaceSurroundingText range reaches return.');
-
-          return;
-        }
-
-        var text = lastChild.textContent;
-        var resultTextContent = '';
-        resultTextContent = text.substr(0, text.length + offset) + str;
-        if (offset !== - length) {
-          resultTextContent += text.substr(text.length + offset + length);
-        }
-        lastChild.textContent =
-          resultTextContent.replace(/ /g, String.fromCharCode(0xA0))
-            .replace(/\xA0(\S)/g, function(m0, m1) { return ' ' + m1; });
-
-        this.composition.scrollIntoView();
-      }.bind(this));
 
       break;
   }

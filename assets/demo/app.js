@@ -7,7 +7,6 @@ var KeyboardDemoApp = function() {
   this.container = null;
 };
 
-KeyboardDemoApp.prototype.INPUTAREA_ELEMENT_ID = 'inputarea';
 KeyboardDemoApp.prototype.GAIA_APP_DIR = './gaia/apps/keyboard';
 KeyboardDemoApp.prototype.CONTAINER_ID = 'keyboard-app-container';
 
@@ -27,9 +26,6 @@ KeyboardDemoApp.prototype.start = function() {
 
   window.addEventListener('message', this);
   window.addEventListener('hashchange', this);
-
-  this.inputarea = document.getElementById(this.INPUTAREA_ELEMENT_ID);
-  this.inputarea.addEventListener('mousedown', this);
 
   var hash = this.layouts.currentLayout;
   this.container.src =
@@ -55,7 +51,6 @@ KeyboardDemoApp.prototype.getFocus = function() {
     textAfterCursor: info.textAfterCursor
   });
   this.focused = true;
-  this.inputarea.classList.add('focused');
 
   // We rely on app to tell us when it will be ready to be visible.
   // this.container.classList.remove('transitioned-out');
@@ -75,7 +70,6 @@ KeyboardDemoApp.prototype.removeFocus = function() {
   window.requestAnimationFrame(function() {
     document.body.style.paddingBottom = '';
     this.container.classList.add('transitioned-out');
-    this.inputarea.classList.remove('focused');
   }.bind(this));
 };
 
@@ -104,11 +98,6 @@ KeyboardDemoApp.prototype.handleEvent = function(evt) {
       this.handleMessage(evt.data);
 
       break;
-
-    case 'mousedown':
-      this.getFocus();
-
-      break;
   }
 };
 
@@ -133,8 +122,6 @@ KeyboardDemoApp.prototype.handleMessage = function(data) {
       window.requestAnimationFrame(function() {
         document.body.style.paddingBottom = data.args[1] + 'px';
         this.container.classList.remove('transitioned-out');
-
-        this.inputMethodHandler.composition.scrollIntoView();
       }.bind(this));
 
       if(!this.typeTestHandler._starting){

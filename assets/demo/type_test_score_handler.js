@@ -15,29 +15,38 @@ var TypeTestScoreHandler = function(typeTestHandler, nrOfSentences, nrOfLevels) 
 
   this.sentencesPerLevel = nrOfSentences/nrOfLevels;
   this.currentLevel = function(){
-    return Math.floor(this.countCompletedSentences / this.sentencesPerLevel) + 1;
+    return Math.floor(this.completedSentencesCount / this.sentencesPerLevel) + 1;
   };
 
-  this.countCompletedSentences = 0;
-  this.countTotalTime = 0;
-  this.countTotalChar = 0;
-  this.countTotalWrongChar = 0;
+  this.completedSentencesCount = 0;
+  this.totalTimeCount = 0;
+  this.totalCharCount = 0;
+  this.totalWrongCharCount = 0;
   this.progressInterval = -1;
 };
 
 TypeTestScoreHandler.prototype.SCORE_PANEL_ELEMENT_ID = 'score-panel';
 TypeTestScoreHandler.prototype.DONE_PANEL_ELEMENT_ID = 'done-panel';
+TypeTestScoreHandler.prototype.RESET_PANEL_ELEMENT_ID = 'reset-panel';
 TypeTestScoreHandler.prototype.PROGRESS_BAR_ELEMENT_ID = 'progress-bar';
 TypeTestScoreHandler.prototype.LAST_SENTENCE_ELEMENT_ID = 'last-sentence';
-TypeTestScoreHandler.prototype.LAST_CORRECT_CPM_ELEMENT_ID = 'correct-cpm';
-TypeTestScoreHandler.prototype.LAST_WRONG_CPM_ELEMENT_ID = 'error-percentage';
-TypeTestScoreHandler.prototype.TOTAL_CORRECT_CPM_ELEMENT_ID = 'correct-cpm-total';
-TypeTestScoreHandler.prototype.TOTAL_WRONG_CPM_ELEMENT_ID = 'error-percentage-total';
 
-TypeTestScoreHandler.prototype.LAST_CORRECT_CHAR_ELEMENT_ID = 'correct-char';
-TypeTestScoreHandler.prototype.LAST_WRONG_CHAR_ELEMENT_ID = 'wrong-char';
-TypeTestScoreHandler.prototype.TOTAL_CORRECT_CHAR_ELEMENT_ID = 'correct-char-total';
-TypeTestScoreHandler.prototype.TOTAL_WRONG_CHAR_ELEMENT_ID = 'wrong-char-total';
+TypeTestScoreHandler.prototype.LAST_CPM_ELEMENT_ID = 'last-cpm';
+TypeTestScoreHandler.prototype.LAST_CORRECT_CPM_ELEMENT_ID = 'last-correct-cpm';
+TypeTestScoreHandler.prototype.LAST_ERROR_ELEMENT_ID = 'last-error-percentage';
+
+TypeTestScoreHandler.prototype.TOTAL_CPM_ELEMENT_ID = 'total-cpm';
+TypeTestScoreHandler.prototype.TOTAL_CORRECT_CPM_ELEMENT_ID = 'total-correct-cpm';
+TypeTestScoreHandler.prototype.TOTAL_ERROR_ELEMENT_ID = 'total-error-percentage';
+
+TypeTestScoreHandler.prototype.LAST_CHAR_ELEMENT_ID = 'last-char';
+TypeTestScoreHandler.prototype.LAST_CORRECT_CHAR_ELEMENT_ID = 'last-correct-char';
+TypeTestScoreHandler.prototype.LAST_WRONG_CHAR_ELEMENT_ID = 'last-wrong-char';
+
+TypeTestScoreHandler.prototype.TOTAL_CHAR_ELEMENT_ID = 'total-char';
+TypeTestScoreHandler.prototype.TOTAL_CORRECT_CHAR_ELEMENT_ID = 'total-correct-char';
+TypeTestScoreHandler.prototype.TOTAL_WRONG_CHAR_ELEMENT_ID = 'total-wrong-char';
+
 TypeTestScoreHandler.prototype.CURRENT_LEVEL_ELEMENT_ID = 'type-test-current-level';
 
 TypeTestScoreHandler.prototype.MIN_CPM = 60;
@@ -48,17 +57,24 @@ TypeTestScoreHandler.prototype.start = function() {
 
   this.scorePanel = document.getElementById(this.SCORE_PANEL_ELEMENT_ID);
   this.donePanel = document.getElementById(this.DONE_PANEL_ELEMENT_ID);
+  this.resetPanel = document.getElementById(this.RESET_PANEL_ELEMENT_ID);
   this.currentLevelElement = document.getElementById(this.CURRENT_LEVEL_ELEMENT_ID);
   this.progressBar = document.getElementById(this.PROGRESS_BAR_ELEMENT_ID);
   this.lastSentence = document.getElementById(this.LAST_SENTENCE_ELEMENT_ID);
 
-  this.correctCpm = document.getElementById(this.LAST_CORRECT_CPM_ELEMENT_ID);
-  this.wrongCpm = document.getElementById(this.LAST_WRONG_CPM_ELEMENT_ID);
+  this.lastCpm = document.getElementById(this.LAST_CPM_ELEMENT_ID);
+  this.lastCorrectCpm = document.getElementById(this.LAST_CORRECT_CPM_ELEMENT_ID);
+  this.lastError = document.getElementById(this.LAST_ERROR_ELEMENT_ID);
+  
+  this.totalCpm = document.getElementById(this.TOTAL_CPM_ELEMENT_ID);
   this.totalCorrectCpm = document.getElementById(this.TOTAL_CORRECT_CPM_ELEMENT_ID);
-  this.totalWrongCpm = document.getElementById(this.TOTAL_WRONG_CPM_ELEMENT_ID);
+  this.totalError = document.getElementById(this.TOTAL_ERROR_ELEMENT_ID);
 
-  this.correctChar = document.getElementById(this.LAST_CORRECT_CHAR_ELEMENT_ID);
-  this.wrongChar = document.getElementById(this.LAST_WRONG_CHAR_ELEMENT_ID);
+  this.lastChar = document.getElementById(this.LAST_CHAR_ELEMENT_ID);
+  this.lastCorrectChar = document.getElementById(this.LAST_CORRECT_CHAR_ELEMENT_ID);
+  this.lastWrongChar = document.getElementById(this.LAST_WRONG_CHAR_ELEMENT_ID);
+
+  this.totalChar = document.getElementById(this.TOTAL_CHAR_ELEMENT_ID);
   this.totalCorrectChar = document.getElementById(this.TOTAL_CORRECT_CHAR_ELEMENT_ID);
   this.totalWrongChar = document.getElementById(this.TOTAL_WRONG_CHAR_ELEMENT_ID);
 
@@ -69,26 +85,7 @@ TypeTestScoreHandler.prototype.start = function() {
 
 TypeTestScoreHandler.prototype.stop = function() {
   console.log('TypeTestScoreHandler: stop');
-  this.countTotalTime = 0;
-  this.countTotalChar = 0;
-  this.countTotalWrongChar = 0;
-
-  this.scorePanel = null;
-
-  while(this.lastSentence.lastChild){
-    this.lastSentence.removeChild(this.lastSentence.lastChild);
-  }
-  this.lastSentence = null;
-
-  this.correctCpm = null;
-  this.wrongCpm = null;
-  this.totalCorrectCpm = null;
-  this.totalWrongCpm = null;
-
-  this.correctChar = null;
-  this.wrongChar = null;
-  this.totalCorrectChar = null;
-  this.totalWrongChar = null;
+  clearInterval(this.progressInterval);
 };
 
 TypeTestScoreHandler.prototype.startTyping = function(sentenceLength) {
@@ -115,7 +112,10 @@ TypeTestScoreHandler.prototype.showScore = function() {
 };
 
 TypeTestScoreHandler.prototype.showDonePanel = function() {
-  this.donePanel.style.display = '';
+  if(this.completedSentencesCount > 4)
+    this.donePanel.style.display = '';
+  else
+    this.resetPanel.style.display = '';
 };
 
 TypeTestScoreHandler.prototype.hideScore = function() {
@@ -124,37 +124,46 @@ TypeTestScoreHandler.prototype.hideScore = function() {
 
 TypeTestScoreHandler.prototype.addCompletedSentence = function(res) {
   console.log('TypeTestScoreHandler: addCompletedSentence');
-  ++this.countCompletedSentences;
+  ++this.completedSentencesCount;
   var lastTouch = res.data[res.data.length -1];
-  this.countTotalTime += lastTouch.time;
-  this.countTotalChar += res.sentence.s.length;
-  this.countTotalWrongChar += res.wrongCharCount;
+  this.totalTimeCount += lastTouch.time;
+  this.totalCharCount += res.sentence.s.length;
+  this.totalWrongCharCount += res.wrongCharCount;
   
   //current cpm
-  var tm = 60000 / lastTouch.time;
-  this.correctCpm.innerHTML = 
-    Math.floor(tm * res.sentence.s.length);
-  this.wrongCpm.innerHTML = 
-    Math.floor(res.wrongCharCount * 100 / res.sentence.s.length)  + '%';
+  var currentScore = getScore(lastTouch.time, res.sentence.s.length, res.wrongCharCount);
+  this.lastCpm.innerHTML =  currentScore.cpm;
+  this.lastCorrectCpm.innerHTML = currentScore.correctCpm;
+  this.lastError.innerHTML = currentScore.error  + '%';
 
   //total cpm
-  var tmTotal = 60000 / this.countTotalTime;
-  this.totalCorrectCpm.innerHTML = 
-    Math.floor(tmTotal * this.countTotalChar);
-  this.totalWrongCpm.innerHTML = 
-    Math.floor(this.countTotalWrongChar * 100 / this.countTotalChar) + '%';
+  var totalScore = getScore(this.totalTimeCount, this.totalCharCount, this.totalWrongCharCount);
+  this.totalCpm.innerHTML = totalScore.cpm;
+  this.totalCorrectCpm.innerHTML = totalScore.correctCpm;
+  this.totalError.innerHTML = totalScore.error + '%';
 
   //current char count
-  this.correctChar.innerHTML = res.sentence.s.length;
-  this.wrongChar.innerHTML = res.wrongCharCount;
+  this.lastChar.innerHTML = res.sentence.s.length;
+  this.lastCorrectChar.innerHTML = res.sentence.s.length - res.wrongCharCount;
+  this.lastWrongChar.innerHTML = res.wrongCharCount;
 
   //total char count
-  this.totalCorrectChar.innerHTML = this.countTotalChar;
-  this.totalWrongChar.innerHTML = this.countTotalWrongChar;
+  this.totalChar.innerHTML = this.totalCharCount;
+  this.totalCorrectChar.innerHTML = this.totalCharCount - this.totalWrongCharCount;
+  this.totalWrongChar.innerHTML = this.totalWrongCharCount;
 
   //typed sequence
   this.lastSentence.lastChild.textContent = res.typedSequence;
 };
+
+function getScore(time, sentenceLength, wrongCharCount){
+  var tm = 60000 / time;
+  return{
+    cpm: Math.floor(tm * sentenceLength),
+    correctCpm: Math.floor(tm * (sentenceLength - wrongCharCount)),
+    error: Math.floor(wrongCharCount * 100 / sentenceLength)
+  };
+}
 
 TypeTestScoreHandler.prototype._getCharPerMinute = function(level, nrOfLevels){
   var increasePerLevel = (this.MAX_CPM - this.MIN_CPM) / (nrOfLevels-1);
