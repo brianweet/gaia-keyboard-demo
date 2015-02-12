@@ -109,17 +109,17 @@
         var time = eventTime - startTime;
 
         if(evt instanceof MouseEvent){
-          this.add(evt, evt.type, time);
+          this.add(evt, evt.type, time, eventTime);
         }else{
           for (var i = 0; i < evt.changedTouches.length; i++) {
-            this.add(evt.changedTouches[i], evt.type, time);
+            this.add(evt.changedTouches[i], evt.type, time, eventTime);
           }
         }
         break;
     }
   };
 
-  TouchTrack.prototype.add = function(evt, type, time) {
+  TouchTrack.prototype.add = function(evt, type, time, systemTime) {
     var touchEvent = 
             {
               type: type,
@@ -129,7 +129,7 @@
               keycodeUpper: evt.target.dataset.keycodeUpper,
               isUpperCase: this.app.upperCaseStateManager.isUpperCase,
               time: time,
-              systemTime: Date.now()
+              systemTime: systemTime
             };
     trackedTouches.push(touchEvent);
   };
