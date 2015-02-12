@@ -161,7 +161,8 @@ InputMethodHandler.prototype.handleInputMethodManagerMessage = function(data) {
       break;
 
     case 'hide':
-      this.app.removeFocus();
+      //dont want to hide my keyboard :(
+      //this.app.removeFocus();
 
       break;
   }

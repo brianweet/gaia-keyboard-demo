@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="theme-color" content="#eeeeee">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <!-- Common style -->
+  <link rel="stylesheet" href="ftu/shared/style/buttons.css">
+  <link rel="icon" sizes="192x192" href="/icon.png">
+  
+  <!-- Specific style -->
+  <link rel="stylesheet" href="ftu/style/style.css">
+  <link rel="stylesheet" href="ftu/style/tutorial.css">
+  <link rel="stylesheet" href="ftu/style/custom/gaia-buttons/gaia-buttons.css">
+  <link rel="stylesheet" href="ftu/style/custom/style.css">
+
+  <title>Welcome to Type Test</title>
+
+  <!-- Localization -->
+  <link rel="resource" type="image/png" href="ftu/shared/resources/branding/logosmall.png"/>
+  <link rel="manifest" href="manifest.webapp">
+  
+  <script>
+  if (!window.Map || !window.Promise || !window.WeakMap || !Object.assign) {
+    document.write(
+      '<script defer src="//cdnjs.cloudflare.com/ajax/libs/es6-shim/0.11.0/es6-shim.min.js"><' + '/script>');
+  }
+  </script>
+
+  <!-- Code for the FTU App -->
+  <script defer src="ftu/js/utils.js"></script>
+  <script defer src="ftu/js/tutorial.js"></script>
+  <script defer src="ftu/js/app.js"></script>
+
+  <!-- Components -->
+
+  <script defer src="ftu/shared/elements/config.js"></script>
+  <link rel="stylesheet" type="text/css" href="ftu/shared/elements/gaia-theme/gaia-theme.css" />
+
+</head>
+<body id="container" class="theme-settings" aria-hidden="true">
+  <section id="tutorial" role="region" data-step="1">
+    <article id="tutorial-steps-container" role="main">
+      <section id="tutorial-step-header">
+        <p id="tutorial-step-title">
+        </p>
+      </section>
+      <section id="tutorial-step-media">
+        <img id="tutorial-step-image" class="step-img-base" role="presentation">
+      </section>
+    </article>
+    <div id="tutorial-nav-bar" class="gaia-buttons" skin="dark">
+      <button id="back-tutorial" class="button-left icon icon-previous">Back</button>
+      <button id="forward-tutorial" class="recommend icon icon-next">Next</button>
+    </div>
+  </section>
+</body>
+</html>

@@ -53,7 +53,7 @@ TypeTestScoreHandler.prototype.HIGHSCORE_PANEL_ELEMENT_ID = 'highscore-panel';
 TypeTestScoreHandler.prototype.HIGHSCORE_BUTTON_ELEMENT_ID = 'highscore-button';
 
 TypeTestScoreHandler.prototype.MIN_CPM = 60;
-TypeTestScoreHandler.prototype.MAX_CPM = 260;
+TypeTestScoreHandler.prototype.MAX_CPM = 300;
 
 TypeTestScoreHandler.prototype.start = function() {
   this.scorePanel = document.getElementById(this.SCORE_PANEL_ELEMENT_ID);

@@ -25,6 +25,11 @@
     margin: 10px 0;
     display: block;
   }
+
+  .navbar-toggle {
+    margin-top: 5px;
+    margin-bottom: 5px;
+  }
 }
 
 input.form-control[type="range"] {
