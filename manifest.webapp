@@ -2,7 +2,7 @@
     "version":"0.0.1",
   "name": "Collect touch data",
     "description": "",
-    "launch_path": "/index.html",
+    "launch_path": "/ftu.html",
     "icons": {
         "128": "/icon.png"
     },
@@ -17,6 +17,6 @@
     },
     "fullscreen": "true",
     "orientation": "portrait-primary",
-    "start_url": "/index.html",
+    "start_url": "/ftu.html",
     "display": "fullscreen"
 }

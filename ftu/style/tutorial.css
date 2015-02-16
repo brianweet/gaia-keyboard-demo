@@ -48,9 +48,13 @@
 }
 
 #tutorial-step-media img {
-  width: 28.9rem;
+  width: initial;
+  max-width: 28.9rem;
 }
 
+#tutorial-step-link {
+  width: initial;
+}
 /*
  * First step. Has no 'Back' action.
  */

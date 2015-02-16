@@ -53,7 +53,7 @@
       </div>
     </div>
   </div>
-  <div class="container" id="content-panel" style="display:none">
+  <div class="container" id="content-panel" hidden>
     <div id="ongoing-game-panel">
       <div class="sentence-wrapper">
         <blockquote>
@@ -64,24 +64,25 @@
       <div class="progress">
         <div id="progress-bar" class="progress-bar progress-bar-success" role="progressbar" style="width: 100%">
           <strong>Current level</strong>
-          <span id="type-test-current-level"></span>
+          <span id="current-level"></span>
         </div>
       </div>
     </div>
 
-    <div id="reset-panel" style="display:none;">
+    <div id="reset-panel" hidden>
       <h4>Please try again :)</h4>
       <a role="button" href="/" class="btn btn-info">Reset - try again!</a>
       <hr />
     </div>
 
-    <div id="done-panel" style="display:none;">
+    <div id="done-panel" hidden>
       <h4 class="time-is-up">Time is up! You can submit your result to the scoreboard</h4>
       <h4 class="finished">You have finished all sentences! You can submit your result to the scoreboard</h4>
       <form>
         <div class="form-group">
-          <label for="exampleInputEmail1">Your (nick)name</label>
+          <label for="nickname">Your (nick)name</label>
           <input type="text" id="nickname" class="form-control" placeholder="Your (nick)name">
+          <span id="nickname-invalid" hidden>Please use a-z 0-9 only (no whitespace)</span>
         </div>
         <button type="button" id="submit-button" class="btn btn-success">Submit</button>
         <a role="button" href="/" class="btn btn-info">Reset - try again!</a>
@@ -89,7 +90,7 @@
       <hr />
     </div>
 
-    <div id="highscore-panel" style="display:none;">
+    <div id="highscore-panel" hidden>
       <div class="table-responsive">
       <table class="table">
         <thead>
@@ -105,7 +106,7 @@
     </div>
     </div>
 
-    <div id="score-panel" class="well well-sm" style="display:none;">
+    <div id="score-panel" class="well well-sm" hidden>
       <table class="table table-condensed">
         <thead>
           <tr>

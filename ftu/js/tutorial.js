@@ -24,7 +24,10 @@
         // Dont block progress on failure to load media
         if (evt.type === 'error') {
           console.error('Failed to load tutorial media: ' + src);
+        } else {
+          mediaElement.hidden = false;
         }
+        
         resolve(evt);
       }
       function onVideoUnloaded(evt) {
@@ -46,6 +49,7 @@
     'tutorial-step-title',
     'tutorial-step-media',
     'tutorial-step-image',
+    'tutorial-step-link',
     'forward-tutorial',
     'back-tutorial'
   ];
@@ -156,15 +160,22 @@
       this._stepsConfig = 
         {
           steps: [{
-                  "image":"/shared/resources/branding/logosmall.png",
-                  "text": "Step 1"
+                  "image":"/ftu/style/images/brian.jpg",
+                  "text": "Hi, my name is Brian and I want to do some science"
                 },
                 {
-                  "text": "Step 2"
+                  "image":"/ftu/style/images/backspace.png",
+                  "text": "I am trying to improve the gaia keyboard. To do so I created an app to collect typing data. The keyboard in the app is a bit different, as there is no way to correct errors. Easy right?"
                 },
                 {
-                  "image":"/shared/resources/branding/logosmall.png",
-                  "text": "Step 3 (last)"
+                  "image":"/ftu/style/images/sentence.jpg",
+                  "text": "The idea is simple, first read the given sentence, then remember the given sentence and eventually type the given sentence."
+                },
+                {
+                  "image":"/ftu/style/images/normal.jpg",
+                  "text": "Try to type as you would do in a normal situation. There is no need to prevent errors (or to make errors on purpose).",
+                  "link": "http://variationsonnormal.com/2011/04/28/finger-nose-stylus-for-touchscreens/",
+                  "linkTitle": "Picture by Dominic Wilcox"
                 }]
         };
 
@@ -212,12 +223,19 @@
       // Load data
       dom.tutorialStepTitle.textContent = stepData.text;
 
+      if(stepData.link){
+        dom.tutorialStepLink.href = stepData.link;   
+        dom.tutorialStepLink.textContent = stepData.linkTitle;  
+        dom.tutorialStepLink.hidden = false;   
+      } else {
+        dom.tutorialStepLink.hidden = true;
+      }
+
       // Update the image
       var imgElement = dom.tutorialStepImage;
 
-      imgElement.hidden = false;
+      imgElement.hidden = true;
       var stepPromise = _loadMedia(imgElement, stepData.image);
-      imgElement.hidden = false;
 
       return stepPromise;
     },

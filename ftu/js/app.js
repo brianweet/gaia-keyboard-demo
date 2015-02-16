@@ -11,7 +11,7 @@ var AppManager = {
 
     window.addEventListener('tutorialdone', tuturialDone);
     function tuturialDone(){
-      window.location = 'typetest.html';
+      window.location = 'index.html';
     }
   }
 };

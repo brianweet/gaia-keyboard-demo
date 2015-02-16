@@ -36,10 +36,6 @@ TypeTestHandler.prototype.ONGOING_GAME_PANEL_ELEMENT_ID = 'ongoing-game-panel';
 TypeTestHandler.prototype.SENTENCE_ELEMENT_ID = 'sentence';
 TypeTestHandler.prototype.STATUS_ELEMENT_ID = 'type-test-status';
 
-TypeTestHandler.prototype.NICKNAME_ELEMENT_ID = 'nickname';
-TypeTestHandler.prototype.SUBMIT_BUTTON_ELEMENT_ID = 'submit-button';
-TypeTestHandler.prototype.SUBMIT_STATUS_ELEMENT_ID = 'submit-status';
-
 
 TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions) {
   if(this._starting || this._started){
@@ -52,10 +48,7 @@ TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions)
   this.ongoingGamePanel = document.getElementById(this.ONGOING_GAME_PANEL_ELEMENT_ID);
   this.sentenceEl = document.getElementById(this.SENTENCE_ELEMENT_ID);
   this.statusSpan = document.getElementById(this.STATUS_ELEMENT_ID);
-  this.submitButton = document.getElementById(this.SUBMIT_BUTTON_ELEMENT_ID);
-  this.nicknameInput = document.getElementById(this.NICKNAME_ELEMENT_ID);
-  this.submitStatus = document.getElementById(this.SUBMIT_STATUS_ELEMENT_ID);
-  this.submitButton.addEventListener('click', this);
+  
 
   Promise
     .all([this._register(keyboardDimensions, screenDimensions), this._getDataSet()])
@@ -77,8 +70,8 @@ TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions)
 
       this._setNewSentence();
 
-      this.loadingPanel.style.display = 'none';
-      this.contentPanel.style.display = '';
+      this.loadingPanel.hidden = true;
+      this.contentPanel.hidden = false;
 
       this._started = true;
       this._starting = false;
@@ -95,25 +88,6 @@ TypeTestHandler.prototype.stop = function() {
   if(this.scoreHandler)
     this.scoreHandler.stop();
 
-};
-
-TypeTestHandler.prototype.handleEvent = function(evt) {
-  if (!evt.target) {
-    return;
-  }
-
-  switch (evt.type) {
-    case 'click':
-      evt.preventDefault();
-
-      if (evt.target.id === this.SUBMIT_BUTTON_ELEMENT_ID) {
-        var name = this.nicknameInput.value;
-        if (name)
-          this._sendNickName(name);
-      }
-
-      break;
-  }
 };
 
 TypeTestHandler.prototype.processLog = function(logMessage) {
@@ -192,30 +166,9 @@ TypeTestHandler.prototype.timeIsUp = function() {
   });
 
   this.app.removeFocus();
-  this.ongoingGamePanel.style.display = 'none';
+  this.ongoingGamePanel.hidden = true;
   this.scoreHandler.showScore();
   this.scoreHandler.showDonePanel();
-};
-
-TypeTestHandler.prototype._sendNickName = function(nickname) {
-  //TODO validate data
-  if(!nickname)
-    return;
-
-  this.nicknameInput.disabled = true;
-  this.submitButton.disabled = true;
-
-  //send data to server
-  return Utils.postJSON('/api/nickname/' + this._typeTestSessionId, {nickname: nickname})
-  .then(function(){
-    this.scoreHandler.getHighscore();
-  }.bind(this))
-  .catch(function(e){
-    this.submitStatus.textContent = 'Something went wrong, please try to submit again';
-    this.nicknameInput.disabled = false;
-    this.submitButton.disabled = false;
-    console.error(e);
-  }.bind(this));
 };
 
 TypeTestHandler.prototype._register = function(resizeArgs, screenDimensions) {

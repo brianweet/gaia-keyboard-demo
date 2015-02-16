@@ -25,33 +25,37 @@ var TypeTestScoreHandler = function(typeTestHandler, nrOfSentences, nrOfLevels) 
   this.progressInterval = -1;
 };
 
+// panels
 TypeTestScoreHandler.prototype.SCORE_PANEL_ELEMENT_ID = 'score-panel';
 TypeTestScoreHandler.prototype.DONE_PANEL_ELEMENT_ID = 'done-panel';
 TypeTestScoreHandler.prototype.RESET_PANEL_ELEMENT_ID = 'reset-panel';
+TypeTestScoreHandler.prototype.HIGHSCORE_PANEL_ELEMENT_ID = 'highscore-panel';
+// progress
 TypeTestScoreHandler.prototype.PROGRESS_BAR_ELEMENT_ID = 'progress-bar';
 TypeTestScoreHandler.prototype.LAST_SENTENCE_ELEMENT_ID = 'last-sentence';
-
+TypeTestScoreHandler.prototype.CURRENT_LEVEL_ELEMENT_ID = 'current-level';
+// current sentence score
 TypeTestScoreHandler.prototype.LAST_CPM_ELEMENT_ID = 'last-cpm';
 TypeTestScoreHandler.prototype.LAST_CORRECT_CPM_ELEMENT_ID = 'last-correct-cpm';
 TypeTestScoreHandler.prototype.LAST_ERROR_ELEMENT_ID = 'last-error-percentage';
-
-TypeTestScoreHandler.prototype.TOTAL_CPM_ELEMENT_ID = 'total-cpm';
-TypeTestScoreHandler.prototype.TOTAL_CORRECT_CPM_ELEMENT_ID = 'total-correct-cpm';
-TypeTestScoreHandler.prototype.TOTAL_ERROR_ELEMENT_ID = 'total-error-percentage';
-
 TypeTestScoreHandler.prototype.LAST_CHAR_ELEMENT_ID = 'last-char';
 TypeTestScoreHandler.prototype.LAST_CORRECT_CHAR_ELEMENT_ID = 'last-correct-char';
 TypeTestScoreHandler.prototype.LAST_WRONG_CHAR_ELEMENT_ID = 'last-wrong-char';
-
+//total score
+TypeTestScoreHandler.prototype.TOTAL_CPM_ELEMENT_ID = 'total-cpm';
+TypeTestScoreHandler.prototype.TOTAL_CORRECT_CPM_ELEMENT_ID = 'total-correct-cpm';
+TypeTestScoreHandler.prototype.TOTAL_ERROR_ELEMENT_ID = 'total-error-percentage';
 TypeTestScoreHandler.prototype.TOTAL_CHAR_ELEMENT_ID = 'total-char';
 TypeTestScoreHandler.prototype.TOTAL_CORRECT_CHAR_ELEMENT_ID = 'total-correct-char';
 TypeTestScoreHandler.prototype.TOTAL_WRONG_CHAR_ELEMENT_ID = 'total-wrong-char';
-
-TypeTestScoreHandler.prototype.CURRENT_LEVEL_ELEMENT_ID = 'type-test-current-level';
-
-TypeTestScoreHandler.prototype.HIGHSCORE_PANEL_ELEMENT_ID = 'highscore-panel';
+//
 TypeTestScoreHandler.prototype.HIGHSCORE_BUTTON_ELEMENT_ID = 'highscore-button';
-
+// Submit score
+TypeTestScoreHandler.prototype.NICKNAME_ELEMENT_ID = 'nickname';
+TypeTestScoreHandler.prototype.NICKNAME_INVALID_ELEMENT_ID = 'nickname-invalid';
+TypeTestScoreHandler.prototype.SUBMIT_BUTTON_ELEMENT_ID = 'submit-button';
+TypeTestScoreHandler.prototype.SUBMIT_STATUS_ELEMENT_ID = 'submit-status';
+// settings
 TypeTestScoreHandler.prototype.MIN_CPM = 60;
 TypeTestScoreHandler.prototype.MAX_CPM = 300;
 
@@ -66,15 +70,13 @@ TypeTestScoreHandler.prototype.start = function() {
   this.lastCpm = document.getElementById(this.LAST_CPM_ELEMENT_ID);
   this.lastCorrectCpm = document.getElementById(this.LAST_CORRECT_CPM_ELEMENT_ID);
   this.lastError = document.getElementById(this.LAST_ERROR_ELEMENT_ID);
+  this.lastChar = document.getElementById(this.LAST_CHAR_ELEMENT_ID);
+  this.lastCorrectChar = document.getElementById(this.LAST_CORRECT_CHAR_ELEMENT_ID);
+  this.lastWrongChar = document.getElementById(this.LAST_WRONG_CHAR_ELEMENT_ID);
   
   this.totalCpm = document.getElementById(this.TOTAL_CPM_ELEMENT_ID);
   this.totalCorrectCpm = document.getElementById(this.TOTAL_CORRECT_CPM_ELEMENT_ID);
   this.totalError = document.getElementById(this.TOTAL_ERROR_ELEMENT_ID);
-
-  this.lastChar = document.getElementById(this.LAST_CHAR_ELEMENT_ID);
-  this.lastCorrectChar = document.getElementById(this.LAST_CORRECT_CHAR_ELEMENT_ID);
-  this.lastWrongChar = document.getElementById(this.LAST_WRONG_CHAR_ELEMENT_ID);
-
   this.totalChar = document.getElementById(this.TOTAL_CHAR_ELEMENT_ID);
   this.totalCorrectChar = document.getElementById(this.TOTAL_CORRECT_CHAR_ELEMENT_ID);
   this.totalWrongChar = document.getElementById(this.TOTAL_WRONG_CHAR_ELEMENT_ID);
@@ -82,9 +84,14 @@ TypeTestScoreHandler.prototype.start = function() {
 
   this.highscorePanel = document.getElementById(this.HIGHSCORE_PANEL_ELEMENT_ID);
   this.highscoreButton = document.getElementById(this.HIGHSCORE_BUTTON_ELEMENT_ID);
+
+  this.submitButton = document.getElementById(this.SUBMIT_BUTTON_ELEMENT_ID);
+  this.nicknameInput = document.getElementById(this.NICKNAME_ELEMENT_ID);
+  this.nicknameInvalid = document.getElementById(this.NICKNAME_INVALID_ELEMENT_ID);
+  this.submitStatus = document.getElementById(this.SUBMIT_STATUS_ELEMENT_ID);
+  
+  this.submitButton.addEventListener('click', this);
   this.highscoreButton.addEventListener('click', this);
-
-
 
   this._updateUILevelIndicator(this.MIN_CPM);
 }
@@ -100,6 +107,13 @@ TypeTestScoreHandler.prototype.handleEvent = function(evt) {
 
       if (evt.target.id === this.HIGHSCORE_BUTTON_ELEMENT_ID || evt.target.parentElement.id === this.HIGHSCORE_BUTTON_ELEMENT_ID) {
         this._toggleHighScorePanel();
+      } else if (evt.target.id === this.SUBMIT_BUTTON_ELEMENT_ID) {
+        var name = this.nicknameInput.value;
+        if(!name.length || /[^a-z0-9]/gi.test(name)){
+          this.nicknameInvalid.hidden = false;
+        } else{ 
+          this._sendNickName(name);
+        }
       }
 
       break;
@@ -133,7 +147,7 @@ TypeTestScoreHandler.prototype.getHighscore = function() {
       tbody.appendChild(row);
     };
 
-    this.highscorePanel.style.display = '';
+    this.highscorePanel.hidden = false;
 
   }.bind(this)).catch(function(e){
       console.error(e);
@@ -141,11 +155,32 @@ TypeTestScoreHandler.prototype.getHighscore = function() {
 };
 
 TypeTestScoreHandler.prototype._toggleHighScorePanel = function() {
-  if(this.highscorePanel.style.display === ''){
-    this.highscorePanel.style.display = 'none';
+  if(this.highscorePanel.hidden === false){
+    this.highscorePanel.hidden = true;
   } else {
     this.getHighscore();
   }
+};
+
+TypeTestScoreHandler.prototype._sendNickName = function(nickname) {
+  //TODO validate data
+  if(!nickname)
+    return;
+
+  this.nicknameInput.disabled = true;
+  this.submitButton.disabled = true;
+
+  //send data to server
+  return Utils.postJSON('/api/nickname/' + this._typeTestSessionId, {nickname: nickname})
+  .then(function(){
+    this.getHighscore();
+  }.bind(this))
+  .catch(function(e){
+    this.submitStatus.textContent = 'Something went wrong, please try to submit again';
+    this.nicknameInput.disabled = false;
+    this.submitButton.disabled = false;
+    console.error(e);
+  }.bind(this));
 };
 
 TypeTestScoreHandler.prototype.stop = function() {
@@ -170,24 +205,27 @@ TypeTestScoreHandler.prototype.updateLevel = function() {
 };
 
 TypeTestScoreHandler.prototype.showScore = function() {
-  this.scorePanel.style.display = '';
+  this.scorePanel.hidden = false;
 };
 
 TypeTestScoreHandler.prototype.showDonePanel = function() {
   if(this.completedSentencesCount > 4){
-    if(this.completedSentencesCount === this.nrOfSentences)
-      this.donePanel.classList.add('finished');
-    else
-      this.donePanel.classList.add('time-is-up');
+    if(this.completedSentencesCount === this.nrOfSentences){
 
-    this.donePanel.style.display = '';
+      this.donePanel.classList.add('finished');
+    }
+    else{
+      this.donePanel.classList.add('time-is-up');
+    }
+
+    this.donePanel.hidden = false;
   }
   else
-    this.resetPanel.style.display = '';
+    this.resetPanel.hidden = false;
 };
 
 TypeTestScoreHandler.prototype.hideScore = function() {
-  this.scorePanel.style.display = 'none';
+  this.scorePanel.hidden = true;
 };
 
 TypeTestScoreHandler.prototype.addCompletedSentence = function(res) {
