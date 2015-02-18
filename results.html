@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <script>
+  if (!window.Map || !window.Promise || !window.WeakMap || !Object.assign) {
+    document.write(
+      '<script defer src="//cdnjs.cloudflare.com/ajax/libs/es6-shim/0.11.0/es6-shim.min.js"><' + '/script>');
+  }
+  </script>
+  <script defer src="results/js/models.js"></script>
+  <script defer src="results/js/keyboard.js"></script>
+  <script defer src="results/js/app.js"></script>
+</head>
+<body>
+  <section>
+    <input id="nickname-input" value="brian" />
+    <button id="get-results-button">Get results</button>
+  </section>
+  <section>
+    <canvas id="result-canvas" style="border:1px solid #000000;"></canvas>
+  </section>
+</body>
+</html>
