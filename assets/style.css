@@ -190,4 +190,5 @@ body > *:not(.container) {
   width:100%;
   float: left;
   font-family: "Courier New", Courier, monospace;
+  word-break: break-all;
 }

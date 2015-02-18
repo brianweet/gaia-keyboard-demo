@@ -165,11 +165,15 @@
                 },
                 {
                   "image":"/ftu/style/images/backspace.png",
-                  "text": "I am trying to improve the gaia keyboard. To do so I created an app to collect typing data. The keyboard in the app is a bit different, as there is no way to correct errors. Easy right?"
+                  "text": "I am trying to improve the gaia keyboard. To do so I created an app to collect typing data. The keyboard does not have a backspace, which means there is no way to correct errors. Easy right?"
                 },
                 {
-                  "image":"/ftu/style/images/sentence.jpg",
+                  "image":"/ftu/style/images/sentence.png",
                   "text": "The idea is simple, first read the given sentence, then remember the given sentence and eventually type the given sentence."
+                },
+                {
+                  "image":"/ftu/style/images/bold_char.png",
+                  "text": "The bold character shows you which character you have to type next. If it shows an underscore you have to type a space, as it's a bit hard to make whitespace bold."
                 },
                 {
                   "image":"/ftu/style/images/normal.jpg",
