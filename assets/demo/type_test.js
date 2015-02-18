@@ -143,9 +143,6 @@ TypeTestHandler.prototype.checkInputChar = function(char){
     if(sentence[this.currentCharPos] !== char){
       isWrongChar = true;
       result.wrongCharCount++;
-
-      if(window.navigator.vibrate)
-        window.navigator.vibrate(50);
     }
 
     //check if we have to end the current sentence
@@ -154,7 +151,7 @@ TypeTestHandler.prototype.checkInputChar = function(char){
     }
     
     //show progress on UI (make part of the sentence bold)
-    this._drawUISentence(this.currentCharPos, isWrongChar, sentence);
+    this._drawUISentence(this.sentenceEl, this.currentCharPos, isWrongChar, sentence);
 };
 
 TypeTestHandler.prototype.timeIsUp = function() {
@@ -245,11 +242,10 @@ TypeTestHandler.prototype._endCurrentSentence = function() {
   });
 };
 
-TypeTestHandler.prototype._drawUISentence = function(cp, iwc, s) {
+TypeTestHandler.prototype._drawUISentence = function(el, cp, iwc, s) {
   window.requestAnimationFrame(
-    function(charPos, isWrongChar, sentence) {
-      var el = this.sentenceEl,
-          lastChar = s.slice(charPos-1, charPos),
+    function(el, charPos, isWrongChar, sentence) {
+      var lastChar = s.slice(charPos-1, charPos),
           newChar = s.slice(charPos, charPos + 1),
           remainingText = s.slice(charPos + 1);
       
@@ -257,20 +253,17 @@ TypeTestHandler.prototype._drawUISentence = function(cp, iwc, s) {
       if(el.lastChild && el.lastChild.nodeName === '#text'){
         el.removeChild(el.lastChild);
       }
+
       //remove last strong character (want to add it as mark element)
       if(el.lastChild && el.lastChild.nodeName.toLocaleLowerCase() === 'strong'){
         el.removeChild(el.lastChild);
       }
 
-      var lastCharEl = document.createElement('mark');
-      lastCharEl.classList.add(isWrongChar ? 'text-danger' : 'text-success');
-      
-      //want to show wrong spaces as underscores
-      if(isWrongChar && /\s/.test(lastChar))
-        lastChar = '_';
-      lastCharEl.appendChild(document.createTextNode(lastChar));
-
-      el.appendChild(lastCharEl);
+      if(!el.lastChild)
+        el.appendChild(document.createTextNode(lastChar));
+      else{
+        el.lastChild.textContent += lastChar;
+      }
 
       //if next char is space, show underscore
       if(remainingText.length && /\s/.test(newChar))
@@ -280,7 +273,7 @@ TypeTestHandler.prototype._drawUISentence = function(cp, iwc, s) {
       el.appendChild(newCharEl);
       el.appendChild(document.createTextNode(remainingText));
       
-    }.bind(this, cp, iwc, s));
+    }.bind(this, el, cp, iwc, s));
 };
 
 exports.TypeTestHandler = TypeTestHandler;

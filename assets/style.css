@@ -148,26 +148,15 @@ body > *:not(.container) {
   animation: blink-caret 1s step-end infinite;
 }
 
-.sentence{
-    word-spacing: -3px;
-    letter-spacing: -3px;
-    width:100%;
-}
-.sentence span{
-  word-spacing: normal;
-  letter-spacing: normal;
-  display: inline-block;
-  width:100%;
-}
-
 #sentence mark{
-background: none;
-font-weight: bold;  
+  background: none;
+  color: black;
 }
 
 .sentence-wrapper {
   max-width: 100%;
   word-wrap: break-word;
+  font-family: "Courier New", Courier, monospace;
 }
 
 #highscore-panel table{
@@ -196,4 +185,9 @@ font-weight: bold;
 
 #done-panel.finished h4.time-is-up{
   display:none;
+}
+#last-sentence, #typed-sentence {
+  width:100%;
+  float: left;
+  font-family: "Courier New", Courier, monospace;
 }

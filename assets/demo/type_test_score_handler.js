@@ -33,6 +33,7 @@ TypeTestScoreHandler.prototype.HIGHSCORE_PANEL_ELEMENT_ID = 'highscore-panel';
 // progress
 TypeTestScoreHandler.prototype.PROGRESS_BAR_ELEMENT_ID = 'progress-bar';
 TypeTestScoreHandler.prototype.LAST_SENTENCE_ELEMENT_ID = 'last-sentence';
+TypeTestScoreHandler.prototype.TYPED_SENTENCE_ELEMENT_ID = 'typed-sentence';
 TypeTestScoreHandler.prototype.CURRENT_LEVEL_ELEMENT_ID = 'current-level';
 // current sentence score
 TypeTestScoreHandler.prototype.LAST_CPM_ELEMENT_ID = 'last-cpm';
@@ -66,6 +67,9 @@ TypeTestScoreHandler.prototype.start = function() {
   this.currentLevelElement = document.getElementById(this.CURRENT_LEVEL_ELEMENT_ID);
   this.progressBar = document.getElementById(this.PROGRESS_BAR_ELEMENT_ID);
   this.lastSentence = document.getElementById(this.LAST_SENTENCE_ELEMENT_ID);
+  this.lastSentence.appendChild(document.createTextNode(''));
+  this.typedSentence = document.getElementById(this.TYPED_SENTENCE_ELEMENT_ID);
+  this.typedSentence.appendChild(document.createTextNode(''));
 
   this.lastCpm = document.getElementById(this.LAST_CPM_ELEMENT_ID);
   this.lastCorrectCpm = document.getElementById(this.LAST_CORRECT_CPM_ELEMENT_ID);
@@ -80,7 +84,7 @@ TypeTestScoreHandler.prototype.start = function() {
   this.totalChar = document.getElementById(this.TOTAL_CHAR_ELEMENT_ID);
   this.totalCorrectChar = document.getElementById(this.TOTAL_CORRECT_CHAR_ELEMENT_ID);
   this.totalWrongChar = document.getElementById(this.TOTAL_WRONG_CHAR_ELEMENT_ID);
-  this.lastSentence.appendChild(document.createTextNode(''));
+  
 
   this.highscorePanel = document.getElementById(this.HIGHSCORE_PANEL_ELEMENT_ID);
   this.highscoreButton = document.getElementById(this.HIGHSCORE_BUTTON_ELEMENT_ID);
@@ -259,6 +263,7 @@ TypeTestScoreHandler.prototype.addCompletedSentence = function(res) {
 
   //typed sequence
   this.lastSentence.lastChild.textContent = res.typedSequence;
+  this.typedSentence.lastChild.textContent = res.sentence.s;
 };
 
 function getScore(time, sentenceLength, wrongCharCount){

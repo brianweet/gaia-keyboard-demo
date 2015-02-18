@@ -161,7 +161,7 @@
         {
           steps: [{
                   "image":"/ftu/style/images/brian.jpg",
-                  "text": "Hi, my name is Brian and I want to do some science"
+                  "text": "Hi, my name is Brian and I would like to do some science"
                 },
                 {
                   "image":"/ftu/style/images/backspace.png",
