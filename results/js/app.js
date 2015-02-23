@@ -88,7 +88,8 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 		  		var localVal = window.localStorage.getItem(this.dom.nicknameInput.value);
 		  		if(localVal !== null){
 		  			var results = JSON.parse(localVal);
-		  			var touchEv = Export.touchEvents(results.sentences);
+		  			var offset = results.session.screenDimensions.height - results.session.keys.height;
+		  			var touchEv = Export.touchEvents(results.sentences, results.session.keys.keys, offset);
 		  			var sen = Export.sentences(results.sentences);
 		  			download(Export.toCsv(touchEv), 'touchEvents.csv');
 		  			download(Export.toCsv(sen), 'sentences.csv');

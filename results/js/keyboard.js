@@ -94,17 +94,20 @@ var Keyboard = (function () {
 var Export = (function () {
     function Export() {
     }
-    Export.touchEvents = function (results) {
+    Export.touchEvents = function (results, keys, heightOffset) {
         var eventArray = [];
         for (var i = 0; i < results.length; i++) {
             var sen = results[i];
             for (var j = 0; j < sen.data.length; j++) {
                 var te = sen.data[j];
+                var coordCharCode = Keyboard.prototype.charCodeFromCoordinates.call({ keys: keys, heightOffset: heightOffset }, te.screenX, te.screenY);
                 eventArray.push({
                     sId: sen.id,
                     type: te.type,
                     x: te.screenX,
                     y: te.screenY,
+                    evtTargetChar: String.fromCharCode(te.keycode),
+                    coordChar: (coordCharCode) ? String.fromCharCode(coordCharCode) : '',
                     kc: te.keycode,
                     kcu: te.keycodeUpper,
                     isUpper: te.isUpperCase,
