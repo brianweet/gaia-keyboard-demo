@@ -82,6 +82,10 @@ KeyboardAppStarter.prototype.handleEvent = function(evt) {
       window.location.replace('#' + data.result);
 
       break;
+    case 'emulateTouchEvents':
+      var emulator = new EmulateTouchEvents(false, 250);
+      emulator.start();
+    break;
   }
 };
 

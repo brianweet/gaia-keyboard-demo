@@ -56,6 +56,14 @@ KeyboardDemoApp.prototype.GAIA_APP_DIR = './gaia/apps/keyboard';
 KeyboardDemoApp.prototype.CONTAINER_ID = 'keyboard-app-container';
 
 KeyboardDemoApp.prototype.start = function() {
+  this.emulateButton = document.getElementById('emulate-btn');
+  this.emulateButton.addEventListener('click',function(){
+    this.postMessage({
+    api: 'api',
+    method: 'emulateTouchEvents'
+  });
+  }.bind(this));
+
   this.container = document.getElementById(this.CONTAINER_ID);
 
   this.settingsHandler = new SettingsHandler(this);

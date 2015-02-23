@@ -67,7 +67,7 @@ input.form-control[type="range"] {
   width: 100%;
 }
 
-#config-btn {
+#config-btn, #emulate-btn {
   position: relative;
   z-index: 1000;
 }
