@@ -21,7 +21,6 @@ interface ISentenceResult {
     wrongCharCount: number;
     data: IRecordedTouchEvent[];
 }
-
 interface ISentence {
     id: string;
     s: string;

@@ -2,64 +2,78 @@
 ///<reference path="models.ts" />
 "use strict";
 
-class SentenceResult {
+class TouchEventRenderer {
+    private context: CanvasRenderingContext2D;
+    private sentenceResults: ISentenceResult[] = [];
+    private renderedCharCode: number;
+    public keyboard: Keyboard;
 
-    id: string;
-    sentence: ISentence;
-    typedSequence: string;
-    wrongCharCount: number;
-    data: IRecordedTouchEvent[];
+    constructor(ctx: CanvasRenderingContext2D, keyboard: Keyboard, results : ISentenceResult[]){
+        this.context = ctx;
+        this.keyboard = keyboard;
 
-    private findEventIdx(startIndex: number, charCode: number): number{
-        for (var i =  startIndex; i < this.data.length; i++) {
-            var e = this.data[i];
-            //for now, only focus on touch end events
-            if(e.type == TouchEventType.touchend && (charCode == e.keycode || charCode == e.keycodeUpper)){
-                return i;
-            }
-        };
-    }
-    
-    constructor(res: ISentenceResult){
-        this.id = res.id;
-        this.sentence = res.sentence;
-        this.typedSequence = res.typedSequence;
-        this.wrongCharCount = res.wrongCharCount;
-        this.data = res.data;
+        for (var i = 0; i < results.length; i++) {
+            this.sentenceResults.push(results[i]);
+        }
     }
 
-    render(context: CanvasRenderingContext2D, charCode?: number){
+    renderSentence(res: ISentenceResult, context: CanvasRenderingContext2D, charCode?: number){
         var currentCharIdx = 0;
         var j = 0;
-        for (var i = 0; i < this.sentence.s.length; i++) {
-            var correctChar = this.sentence.s[i];
+        for (var i = 0; i < res.sentence.s.length; i++) {
+            var correctChar = res.sentence.s[i];
             var correctCharCode = correctChar.charCodeAt(0);
-            var typedCharCode = this.typedSequence.charCodeAt(i);
-            var typedChar = this.typedSequence[i];
+            var typedChar = res.typedSequence[i];
+            var typedCharCode = typedChar.charCodeAt(0);
 
             //find the touch end event index for this charcode
-            j = this.findEventIdx(j, typedCharCode);
-            if(typeof j == "undefined"){
+            var touchEndIndex = this.findEventIdx(res.data, j, typedChar);
+            if(typeof touchEndIndex == "undefined"){
                 console.error('couldn\'t find touch event?!');
                 return;
             }
 
             //if we don't want to draw, continue with next iteration
             if(charCode && (correctChar.toLowerCase().charCodeAt(0) != charCode && correctChar.toUpperCase().charCodeAt(0) != charCode)){
-                j++;
+                j = touchEndIndex +1;
                 continue;
             }
 
             //draw red/green dots
-            if(correctCharCode === typedCharCode)
-                context.fillStyle = "#00FF00";
-            else   
-                context.fillStyle = "#FF0000";
+            var e = res.data[touchEndIndex];
+            if(correctChar.toLowerCase().charCodeAt(0) === typedCharCode || correctChar.toUpperCase().charCodeAt(0) === typedCharCode)
+                context.fillStyle = '#0F0';
+            else
+                context.fillStyle = '#F00';
 
-            var e = this.data[j];
             context.fillRect(e.screenX, e.screenY, 2, 2);
-            j++;
+            j = touchEndIndex +1;
+
         }
+    }
+
+    render(charCode?: number){
+        this.keyboard.render();
+        for (var i = 0; i < this.sentenceResults.length; ++i) {
+            this.renderSentence(this.sentenceResults[i], this.context, charCode);
+            //this.sentenceResults[i].render(this.context, charCode);
+        }
+        this.renderedCharCode = charCode;
+    }
+
+    private findEventIdx(data : IRecordedTouchEvent[], startIndex: number, findChar: string): number{
+        for (var i =  startIndex; i < data.length; i++) {
+            var e = data[i];
+            
+            //seems like e.keycode and e.keycodeUpper are not reliable...
+            var eventCharCode = this.keyboard.charCodeFromCoordinates(e.screenX, e.screenY);
+            var eventChar = String.fromCharCode(eventCharCode);
+
+            //for now, only focus on touch end events
+            if(e.type == TouchEventType.touchend && (findChar == eventChar || findChar == eventChar.toUpperCase())){
+                return i;
+            }
+        };
     }
 }
 
@@ -69,46 +83,14 @@ class Keyboard {
     private height: number;
     private heightOffset:  number;
     private keys: IKey[];
-    private sentenceResults: SentenceResult[] = [];
-    private renderedCharCode?: number;
+    
 
-    constructor(ctx : CanvasRenderingContext2D, width : number, height : number, heightOffset : number, keys : IKey[]) {
+    constructor(ctx: CanvasRenderingContext2D, width: number, height: number, heightOffset: number, keys: IKey[]) {
         this.context = ctx;
         this.width = width;
         this.height = height;
         this.heightOffset = heightOffset;
         this.keys = keys;
-    }
-
-    addSentenceResults(results : ISentenceResult[]){
-        for (var i = 0; i < results.length; i++) {
-            this.addSentenceResult(results[i]);
-        }
-    }
-
-    private addSentenceResult(sen : ISentenceResult) {
-        this.sentenceResults.push(new SentenceResult(sen));
-    }
-
-    private renderKeys() {
-        //draw keyboard outline
-        this.context.rect(0, this.heightOffset, this.width ,this.height); 
-        this.context.stroke();
-        
-        //draw key outlines
-        for (var i = 0; i < this.keys.length; i++) {
-            var k = this.keys[i];
-            this.context.rect(k.x, k.y + this.heightOffset, k.width, k.height);
-            this.context.stroke();
-        };
-    }
-
-    render(charCode?: number){
-        this.renderKeys();
-        for (var i = 0; i < this.sentenceResults.length; ++i) {
-            this.sentenceResults[i].render(this.context, charCode);
-        }
-        this.renderedCharCode = charCode;
     }
 
     charCodeFromCoordinates(x: number, y: number): number{
@@ -121,6 +103,73 @@ class Keyboard {
             }
         }
         return;
+    }
+
+    render() {
+        //draw keyboard outline
+        this.context.strokeRect(0, this.heightOffset, this.width ,this.height); 
+        
+        //draw key outlines
+        for (var i = 0; i < this.keys.length; i++) {
+            var k = this.keys[i];
+            var cssMargin = k.height/4.3*0.4;
+            this.context.strokeRect(k.x, k.y + this.heightOffset - cssMargin, k.width, k.height + 2 * cssMargin);    
+        };
+    }
+}
+
+class Export {
+    static touchEvents(results: ISentenceResult[]){
+        var eventArray = [];
+        for (var i = 0; i < results.length; i++) {
+            var sen = results[i];
+            for (var j = 0; j < sen.data.length; j++) {
+                var te = sen.data[j];
+                eventArray.push({
+                    sId: sen.id,
+                    type: te.type,
+                    x: te.screenX,
+                    y: te.screenY,
+                    kc: te.keycode,
+                    kcu: te.keycodeUpper,
+                    isUpper: te.isUpperCase,
+                    t: te.time,
+                    st: te.systemTime
+                });
+            };
+        };
+
+        return eventArray;
+    }
+
+    static sentences(results: ISentenceResult[]){
+        var sentencesArray = [];
+        for (var i = 0; i < results.length; i++) {
+            var sen = results[i];
+            sentencesArray.push({
+                id: sen.id,
+                sId: sen.sentence.id,
+                sSen: sen.sentence.s,
+                typedSequence: sen.typedSequence,
+                wrongCharCount: sen.wrongCharCount
+                });
+        };
+        return sentencesArray;
+    }
+
+    static toCsv(data: Array<{}>){
+        var str = '';
+        for (var i = 0; i < data.length; ++i) {
+            var obj = data[i];
+            for (var prop in obj) {
+                if(obj.hasOwnProperty(prop)){
+                    //doesn't escape " chars
+                    str += '"' + obj[prop].toString() + '",';
+                }
+            }
+            str = str.substring(0, str.length-1) + '\n';
+        }
+        return str;
     }
 }
 

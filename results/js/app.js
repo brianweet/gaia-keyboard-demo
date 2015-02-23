@@ -24,58 +24,11 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 (function(exports) {
   	'use strict';
 
-  	function doXHR(method, url, dataObject){
-	  return new Promise(function(resolve, reject) {
-	    var jsonString;
-	    var xhr = new window.XMLHttpRequest({mozSystem: true});
-	    xhr.open(method, url, true);
-
-	    if(dataObject){
-	      jsonString = JSON.stringify(dataObject);
-	      xhr.setRequestHeader('Content-type', 'application/json;charset=UTF-8');
-	    }
-	    
-	    xhr.addEventListener('load', transferDone, false);
-	    xhr.addEventListener('error', transferDone, false);
-	    xhr.addEventListener('abort', transferDone, false);
-
-	    function transferDone(ev) {
-	      if(xhr.status === 200){
-	          resolve(xhr.response);
-	      } else {
-	          reject(xhr.response);
-	      }
-	    }
-
-	    try {
-	        xhr.send(jsonString);
-	      } catch (e) {
-	        reject(e);
-	        return;
-	      }
-	  }.bind(this));
-	}
-
-  	var rdashes = /-(.)/g;
-
-	var Utils = {
-		camelCase: function ut_camelCase(str) {
-		  return str.replace(rdashes, function(str, p1) {
-		    return p1.toUpperCase();
-		  });
-		},
-		getJSON: function getJSON(url){
-		  return doXHR('get', url);
-		},
-		postJSON: function postJSON(url, dataObject){
-		  return doXHR('post', url, dataObject);
-		}
-	};
-
 	var elementIDs = [
 	'result-canvas',
 	'nickname-input',
-	'get-results-button'
+	'get-results-button',
+	'export-button'
 	];
 
 	var AppManager = {
@@ -99,6 +52,7 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 		this.dom.resultCanvas.addEventListener('mousemove',this);
 
 		this.dom.getResultsButton.addEventListener('click',this);
+		this.dom.exportButton.addEventListener('click',this);
 	  },
 	  handleEvent: function(evt){
 	  	evt.preventDefault();
@@ -119,15 +73,27 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 		  		processData.call(this, results);
 		  	}.bind(this))
 	  	} else if(evt.currentTarget.id === this.dom.resultCanvas.id){
-	  		if(!this.keyboard)
+	  		if(!this.renderer)
 	  			return;
 
 	  		var coords = this.dom.resultCanvas.relMouseCoords(evt);
-	  		var charCode = this.keyboard.charCodeFromCoordinates(coords.x, coords.y);
-	  		if(charCode != this.keyboard.renderedCharCode){
+	  		var charCode = this.renderer.keyboard.charCodeFromCoordinates(coords.x, coords.y);
+	  		console.log(coords.x, coords.y);
+	  		if(charCode != this.renderer.renderedCharCode){
 	  			this.canvasCtx.clearRect(0, 0, this.dom.resultCanvas.width, this.dom.resultCanvas.height);
-	  			this.keyboard.render(charCode);
+	  			this.renderer.render(charCode);
 	  		}
+	  	} else if(evt.currentTarget.id === this.dom.exportButton.id){
+	  		if(window.localStorage){
+		  		var localVal = window.localStorage.getItem(this.dom.nicknameInput.value);
+		  		if(localVal !== null){
+		  			var results = JSON.parse(localVal);
+		  			var touchEv = Export.touchEvents(results.sentences);
+		  			var sen = Export.sentences(results.sentences);
+		  			download(Export.toCsv(touchEv), 'touchEvents.csv');
+		  			download(Export.toCsv(sen), 'sentences.csv');
+		  		}
+		  	}
 	  	}
 	  },
 	  setScreenDimensions: function(screenDimensions){
@@ -138,12 +104,20 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 
 	function processData(results){
 		this.setScreenDimensions(results.session.screenDimensions);
-
 		var offset = results.session.screenDimensions.height - results.session.keys.height;
-		this.keyboard = new Keyboard(this.canvasCtx, results.session.width, results.session.height, offset, results.session.keys.keys);
-		this.keyboard.addSentenceResults(results.sentences);
-		this.keyboard.render();
-	  }
+		var keyboard = new Keyboard(this.canvasCtx, results.session.width, results.session.height, offset, results.session.keys.keys);
+		this.renderer = new TouchEventRenderer(this.canvasCtx, keyboard, results.sentences);
+		this.renderer.render();
+  	}
+
+  	function download(stringToDownload, filename){
+  		var hiddenElement = document.createElement('a');
+
+		hiddenElement.href = 'data:attachment/text,' + encodeURI(stringToDownload);
+		hiddenElement.target = '_blank';
+		hiddenElement.download = filename;
+		hiddenElement.click();
+  	}
 
 	
 
