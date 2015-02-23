@@ -176,6 +176,7 @@ TypeTestHandler.prototype._register = function(resizeArgs, screenDimensions) {
   .then(function(resp){
       //TODO: check response
       this._typeTestSessionId = resp;
+
     }.bind(this));
 };
 

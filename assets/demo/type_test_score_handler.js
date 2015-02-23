@@ -175,7 +175,7 @@ TypeTestScoreHandler.prototype._sendNickName = function(nickname) {
   this.submitButton.disabled = true;
 
   //send data to server
-  return Utils.postJSON('/api/nickname/' + this._typeTestSessionId, {nickname: nickname})
+  return Utils.postJSON('/api/nickname/' + this.typeTestHandler._typeTestSessionId, {nickname: nickname})
   .then(function(){
     this.getHighscore();
   }.bind(this))
