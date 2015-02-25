@@ -27,10 +27,14 @@ class TouchEventRenderer {
             var typedCharCode = typedChar.charCodeAt(0);
 
             //find the touch end event index for this charcode
-            var touchEndIndex = this.findEventIdx(res.data, j, typedChar);
+            var touchEndIndex = this.findEventIdx(res.data, j, typedChar, true);
+            
+            if(typeof touchEndIndex == "undefined")
+                touchEndIndex = this.findEventIdx(res.data, j, typedChar);
+
             if(typeof touchEndIndex == "undefined"){
-                console.error('couldn\'t find touch event?!');
-                return;
+                console.error('couldn\'t find touch event?!' + typedChar);
+                continue;
             }
 
             //if we don't want to draw, continue with next iteration
@@ -56,17 +60,25 @@ class TouchEventRenderer {
         this.keyboard.render();
         for (var i = 0; i < this.sentenceResults.length; ++i) {
             this.renderSentence(this.sentenceResults[i], this.context, charCode);
-            //this.sentenceResults[i].render(this.context, charCode);
         }
         this.renderedCharCode = charCode;
     }
 
-    private findEventIdx(data : IRecordedTouchEvent[], startIndex: number, findChar: string): number{
+    private findEventIdx(data : IRecordedTouchEvent[], startIndex: number, findChar: string, fromCoords: boolean = false): number{
         for (var i =  startIndex; i < data.length; i++) {
             var e = data[i];
             
-            //seems like e.keycode and e.keycodeUpper are not reliable...
-            var eventCharCode = this.keyboard.charCodeFromCoordinates(e.screenX, e.screenY);
+            var eventCharCode;
+            if(fromCoords){
+                eventCharCode = 
+                (/^[a-zA-Z]$/.test(findChar)) ?
+                //seems like e.keycode and e.keycodeUpper are not reliable...
+                this.keyboard.charCodeFromCoordinates(e.screenX, e.screenY) :
+                e.keycode;
+            }else{
+                eventCharCode = e.keycode;
+            }
+            
             var eventChar = String.fromCharCode(eventCharCode);
 
             //for now, only focus on touch end events
@@ -97,8 +109,18 @@ class Keyboard {
         var key: IKey;
         for (var i = 0; i < this.keys.length; ++i) {
             key = this.keys[i];
-            if((key.x < x && key.x + key.width > x) &&
-                (key.y + this.heightOffset < y && key.y + this.heightOffset + key.height >= y)){
+
+            var cssMargin = key.height/4.3*0.4;
+
+            var keyX = key.x, keyWidth = key.width;
+
+            if(key.code == 97 || key.code == 65){
+                keyX = 0;
+                keyWidth = key.width * 1.5;
+            }
+
+            if((keyX <= x && keyX + keyWidth > x) &&
+                (key.y + this.heightOffset <= y && key.y + this.heightOffset + (key.height + 2 * cssMargin) >= y)){
                 return key.code;
             }
         }

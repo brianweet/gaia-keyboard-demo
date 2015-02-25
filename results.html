@@ -18,9 +18,29 @@
     <input id="nickname-input" value="brianweet" />
     <button id="get-results-button">Get results</button>
     <button id="export-button">Export</button>
+    <select id="sentence-select"></select>
+  </section>
+  <section>
+    <p>
+      <strong>
+        Actual sentence
+      </strong>
+      <br/>
+      <span id="sentence-span">
+      </span>
+    </p>
+    <p>
+      <strong>
+        Result
+      </strong>
+      <br/>
+      <span id="result-span">
+      </span>
+    </p>
   </section>
   <section>
     <canvas id="result-canvas" style="border:1px solid #000000;"></canvas>
+    <iframe id="emulate-frame" src="/emulate/index.html" style="border:1px solid #000000;"></iframe>
   </section>
 </body>
 </html>
