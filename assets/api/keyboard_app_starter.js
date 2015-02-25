@@ -87,7 +87,7 @@ KeyboardAppStarter.prototype.handleEvent = function(evt) {
       //start emulator after small timeout
       setTimeout(function(){
         this._emulator.start(evt.data.data);
-      },300);
+      }.bind(this), 300);
       break;
   }
 };
