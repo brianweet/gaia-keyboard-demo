@@ -20,6 +20,13 @@ InputMethodHandler.prototype.start = function() {
   this.composition = document.getElementById(this.COMPOSITION_ELEMENT_ID);
 };
 
+InputMethodHandler.prototype.clear = function() {
+  this._text = this._currentText = '';
+  while(this.input.lastChild)
+    this.input.removeChild(this.input.lastChild);
+  this.input.appendChild(document.createTextNode(''));
+};
+
 InputMethodHandler.prototype.handleMessage = function(data) {
   switch (data.api) {
     case 'inputcontext':

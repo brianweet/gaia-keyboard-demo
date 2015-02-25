@@ -23,6 +23,7 @@ KeyboardAppStarter.prototype.start = function() {
 
   this._startAPI();
   this._replaceAppendChild();
+  this._emulator = new EmulateTouchEvents();
 };
 
 KeyboardAppStarter.prototype._startAPI = function() {
@@ -83,9 +84,11 @@ KeyboardAppStarter.prototype.handleEvent = function(evt) {
 
       break;
     case 'emulateTouchEvents':
-      var emulator = new EmulateTouchEvents(false, 250);
-      emulator.start();
-    break;
+      //start emulator after small timeout
+      setTimeout(function(){
+        this._emulator.start(evt.data.data);
+      },300);
+      break;
   }
 };
 

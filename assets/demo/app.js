@@ -56,14 +56,6 @@ KeyboardDemoApp.prototype.GAIA_APP_DIR = './gaia/apps/keyboard';
 KeyboardDemoApp.prototype.CONTAINER_ID = 'keyboard-app-container';
 
 KeyboardDemoApp.prototype.start = function() {
-  this.emulateButton = document.getElementById('emulate-btn');
-  this.emulateButton.addEventListener('click',function(){
-    this.postMessage({
-    api: 'api',
-    method: 'emulateTouchEvents'
-  });
-  }.bind(this));
-
   this.container = document.getElementById(this.CONTAINER_ID);
 
   this.settingsHandler = new SettingsHandler(this);
@@ -198,6 +190,20 @@ KeyboardDemoApp.prototype.handleMessage = function(data) {
 
       break;
 
+    case 'api':
+      this.inputMethodHandler.clear();
+      this.postMessage({
+        api: 'inputmethod',
+        method: 'setInputContext',
+        ctx: true,
+        selectionStart: 0,
+        selectionEnd: 0,
+        textBeforeCursor: '',
+        textAfterCursor: ''
+      });
+      this.postMessage(data);
+
+      break;
     default:
       throw new Error('KeyboardDemoApp: Unknown message.');
 
