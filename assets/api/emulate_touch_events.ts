@@ -5,23 +5,41 @@ class EmulateTouchEvents{
 	private keyboardContainer;
   private _currentTime = 0;
   private _timeoutId = -1;
+  private _started = false;
 
 	constructor() {
 	}
 
 	start(touchEventList: IRecordedTouchEvent[]){
+    if(this._started)
+      throw 'EmulateTouchEvents: Already started';
+
+    this._started = true;
     this._currentTime = 0;
+
     if(this._timeoutId != -1){
       window.clearTimeout(this._timeoutId);
       this._timeoutId = -1;
     }
-		this.process(touchEventList);
+    
+	  this.process(touchEventList);
 	}
 
+  stop(){
+    if(this._timeoutId != -1){
+      window.clearTimeout(this._timeoutId);
+      this._timeoutId = -1;
+    }
+    this._started = false;
+  }
+
   process(touchEventList: IRecordedTouchEvent[]){
+    if(!this._started)
+      return;
+
     var length = touchEventList.length;
     var currentTouches = [];
-    debugger;
+    
     var i = 0;
     var currentEv: IRecordedTouchEvent = touchEventList[i];
     currentTouches.push(currentEv);
@@ -36,6 +54,9 @@ class EmulateTouchEvents{
   }
 
 	scheduleEvents(recordedEvents: IRecordedTouchEvent[], eventTimeStamp: number, remainingEvents: IRecordedTouchEvent[]){
+    if(!this._started)
+      return;
+
 		this._timeoutId = window.setTimeout(function(){
       this._currentTime = eventTimeStamp;
       //fire touch events
@@ -47,6 +68,9 @@ class EmulateTouchEvents{
 	}
 
 	fireEvent(recordedEvents: IRecordedTouchEvent[]){
+    if(!this._started)
+      return;
+      
 		var el = document.elementFromPoint(recordedEvents[0].screenX, recordedEvents[0].screenY);
    	var event = new CustomEvent(recordedEvents[0].type, {
         cancelable: true,

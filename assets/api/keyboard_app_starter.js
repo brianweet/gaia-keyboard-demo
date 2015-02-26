@@ -83,11 +83,18 @@ KeyboardAppStarter.prototype.handleEvent = function(evt) {
       window.location.replace('#' + data.result);
 
       break;
-    case 'emulateTouchEvents':
-      //start emulator after small timeout
+    case 'stopEmulateTouchEvents':
+      this._emulator.stop();
+      window.parent.postMessage({
+        api: 'demo',
+        method: 'emulateStopped',
+        data: evt.data.data
+      }, '*');
+      break;
+    case 'startEmulateTouchEvents':
       setTimeout(function(){
         this._emulator.start(evt.data.data);
-      }.bind(this), 300);
+      }.bind(this), 800);
       break;
   }
 };

@@ -3,8 +3,12 @@ var EmulateTouchEvents = (function () {
     function EmulateTouchEvents() {
         this._currentTime = 0;
         this._timeoutId = -1;
+        this._started = false;
     }
     EmulateTouchEvents.prototype.start = function (touchEventList) {
+        if (this._started)
+            throw 'EmulateTouchEvents: Already started';
+        this._started = true;
         this._currentTime = 0;
         if (this._timeoutId != -1) {
             window.clearTimeout(this._timeoutId);
@@ -12,10 +16,18 @@ var EmulateTouchEvents = (function () {
         }
         this.process(touchEventList);
     };
+    EmulateTouchEvents.prototype.stop = function () {
+        if (this._timeoutId != -1) {
+            window.clearTimeout(this._timeoutId);
+            this._timeoutId = -1;
+        }
+        this._started = false;
+    };
     EmulateTouchEvents.prototype.process = function (touchEventList) {
+        if (!this._started)
+            return;
         var length = touchEventList.length;
         var currentTouches = [];
-        debugger;
         var i = 0;
         var currentEv = touchEventList[i];
         currentTouches.push(currentEv);
@@ -26,6 +38,8 @@ var EmulateTouchEvents = (function () {
         this.scheduleEvents(currentTouches, currentEv.time, touchEventList.slice(i));
     };
     EmulateTouchEvents.prototype.scheduleEvents = function (recordedEvents, eventTimeStamp, remainingEvents) {
+        if (!this._started)
+            return;
         this._timeoutId = window.setTimeout(function () {
             this._currentTime = eventTimeStamp;
             //fire touch events
@@ -36,6 +50,8 @@ var EmulateTouchEvents = (function () {
         }.bind(this), eventTimeStamp - this._currentTime);
     };
     EmulateTouchEvents.prototype.fireEvent = function (recordedEvents) {
+        if (!this._started)
+            return;
         var el = document.elementFromPoint(recordedEvents[0].screenX, recordedEvents[0].screenY);
         var event = new CustomEvent(recordedEvents[0].type, {
             cancelable: true,

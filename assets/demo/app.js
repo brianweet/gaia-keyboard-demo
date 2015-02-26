@@ -190,19 +190,30 @@ KeyboardDemoApp.prototype.handleMessage = function(data) {
 
       break;
 
-    case 'api':
-      this.inputMethodHandler.clear();
-      this.postMessage({
-        api: 'inputmethod',
-        method: 'setInputContext',
-        ctx: true,
-        selectionStart: 0,
-        selectionEnd: 0,
-        textBeforeCursor: '',
-        textAfterCursor: ''
-      });
-      this.postMessage(data);
-
+    case 'demo':
+      if(data.method === 'emulateTouchEvents'){
+        this.postMessage({
+          api: 'api',
+          method: 'stopEmulateTouchEvents',
+          data: data.data
+        });
+      }else if(data.method === 'emulateStopped'){
+        this.inputMethodHandler.clear();
+        this.postMessage({
+          api: 'inputmethod',
+          method: 'setInputContext',
+          ctx: true,
+          selectionStart: 0,
+          selectionEnd: 0,
+          textBeforeCursor: '',
+          textAfterCursor: ''
+        });
+        this.postMessage({
+          api: 'api',
+          method: 'startEmulateTouchEvents',
+          data: data.data
+        });
+      }
       break;
     default:
       throw new Error('KeyboardDemoApp: Unknown message.');
