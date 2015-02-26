@@ -31,8 +31,10 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 	'export-button',
 	'emulate-frame',
 	'sentence-select',
+	'session-select',
 	'sentence-span',
-	'result-span'
+	'result-span',
+	'dist-span'
 	];
 
 	var AppManager = {
@@ -58,6 +60,7 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 		this.dom.getResultsButton.addEventListener('click',this);
 		this.dom.exportButton.addEventListener('click',this);
 		this.dom.sentenceSelect.addEventListener('change',this);
+		this.dom.sessionSelect.addEventListener('change',this);
 	  },
 	  handleEvent: function(evt){
 	  	evt.preventDefault();
@@ -73,6 +76,9 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 	  			break;
 	  		case this.dom.sentenceSelect:
 	  			handleSentenceSelectChange.call(this, evt);
+	  			break;
+	  		case this.dom.sessionSelect:
+	  			handleSessionSelectChange.call(this, evt);
 	  			break;
 	  	}
 	  },
@@ -111,13 +117,21 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
   		}
 	}
 
+	function handleSessionSelectChange(evt){
+		var session = this.highscores.filter(function(s){
+			return s.RowKey == this.dom.sessionSelect.value;
+		}.bind(this))[0];
+		processData.call(this, session);
+	}
+
 	function handleSentenceSelectChange(evt){
 		var sentenceRes = this.results.sentences.filter(function(s){
-			return s.id == this.dom.sentenceSelect.value
+			return s.id == this.dom.sentenceSelect.value;
 		}.bind(this))[0];
 
 		this.dom.sentenceSpan.textContent = sentenceRes.sentence.s;
 		this.dom.resultSpan.textContent = sentenceRes.typedSequence;
+		this.dom.distSpan.textContent = Utils.getEditDistance(sentenceRes.sentence.s, sentenceRes.typedSequence);
 
 		this.canvasCtx.clearRect(0, 0, this.dom.resultCanvas.width, this.dom.resultCanvas.height);
 		this.renderer.sentenceResults.length = 0;
@@ -126,18 +140,21 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 		
 		if(sentenceRes.data.length)
 		this.dom.emulateFrame.contentWindow.postMessage({
-			api: 'api',
+			api: 'demo',
 			method: 'emulateTouchEvents',
 			data: sentenceRes.data
 		}, '*');
 	}
 
 	function loadData(){
+		this.dom.sentenceSelect.hidden = 
+		this.dom.sessionSelect.hidden = true;
 		if(window.localStorage){
 	  		var localVal = window.localStorage.getItem(this.dom.nicknameInput.value);
 	  		if(localVal !== null){
-	  			var results = JSON.parse(localVal);
-	  			processData.call(this, results);
+	  			var highscores = JSON.parse(localVal);
+	  			this.highscores = highscores;
+	  			fillSessionSelect.call(this, highscores);
 	  			return;
 	  		}
 	  	}
@@ -145,30 +162,46 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 	  	Utils.getJSON('/api/results/' + this.dom.nicknameInput.value).then(function(res){
 	  		if(window.localStorage)
 	  			window.localStorage.setItem(this.dom.nicknameInput.value, res);
-	  		var results = JSON.parse(res);
-	  		processData.call(this, results);
+	  		var highscores = JSON.parse(res);
+	  		this.highscores = highscores;
+	  		fillSessionSelect.call(this, highscores);
 	  	}.bind(this));
 	}
 
-	function fillSelect(options){
+	function fillSessionSelect(options){
+		var opt;
+		fillSelect(this.dom.sessionSelect, 'Select a session', options, function(current){
+			opt = document.createElement('option');
+		    opt.innerHTML = current.nickname + ' - ' + current.Timestamp;
+		    opt.value = current.RowKey;
+		    this.appendChild(opt);
+		});
+	}
+
+	function fillSentenceSelect(options){
+		var opt;
+		fillSelect(this.dom.sentenceSelect, 'Select a sentence to emulate', options, function(current){
+			opt = document.createElement('option');
+		    opt.innerHTML = current.sentence.id + ':' + current.sentence.s.slice(0, 25) + ' (' + current.wrongCharCount + ' wrong)' ;
+		    opt.value = current.id;
+		    this.appendChild(opt);
+		});
+	}
+
+	function fillSelect(el, defaultOptionString, options, optionsFunction){
+		el.hidden = false;
 		//remove old options
-		while(this.dom.sentenceSelect.lastChild)
-			this.dom.sentenceSelect.removeChild(this.dom.sentenceSelect.lastChild);
+		while(el.lastChild)
+			el.removeChild(el.lastChild);
 
 		//add default
 		var opt = document.createElement('option');
-		opt.innerHTML = 'Select a sentence to emulate';
+		opt.innerHTML = defaultOptionString;
 		opt.value = '';
-		this.dom.sentenceSelect.appendChild(opt);
+		el.appendChild(opt);
 
 		//add sentences
-		for(var i = 0; i < options.length; i++) {
-			var current = options[i];
-		    opt = document.createElement('option');
-		    opt.innerHTML = current.sentence.id + ':' + current.sentence.s + '(' + current.wrongCharCount + ' wrong)' ;
-		    opt.value = current.id;
-		    this.dom.sentenceSelect.appendChild(opt);
-		}
+		options.forEach(optionsFunction.bind(el));
 	}
 
 	function processData(results){
@@ -179,7 +212,7 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 		this.renderer = new TouchEventRenderer(this.canvasCtx, keyboard, results.sentences);
 		this.renderer.render();
 
-		fillSelect.call(this, results.sentences);
+		fillSentenceSelect.call(this, results.sentences);
   	}
 
   	function download(stringToDownload, filename){

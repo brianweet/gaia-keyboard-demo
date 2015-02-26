@@ -17,8 +17,13 @@
   <section>
     <input id="nickname-input" value="brianweet" />
     <button id="get-results-button">Get results</button>
-    <button id="export-button">Export</button>
-    <select id="sentence-select"></select>
+    <button id="export-button" hidden>Export</button>
+  </section>
+  <section>
+    <select id="session-select" hidden></select>
+  </section>
+  <section>
+    <select id="sentence-select" hidden></select>
   </section>
   <section>
     <p>
@@ -35,6 +40,14 @@
       </strong>
       <br/>
       <span id="result-span">
+      </span>
+    </p>
+    <p>
+      <strong>
+        Levenshtein dist
+      </strong>
+      <br/>
+      <span id="dist-span">
       </span>
     </p>
   </section>

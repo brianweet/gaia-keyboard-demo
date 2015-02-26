@@ -67,22 +67,25 @@ class TouchEventRenderer {
     private findEventIdx(data : IRecordedTouchEvent[], startIndex: number, findChar: string, fromCoords: boolean = false): number{
         for (var i =  startIndex; i < data.length; i++) {
             var e = data[i];
+
+            //for now, only focus on touch end events
+            if(e.type != TouchEventType.touchend)
+                continue;
             
             var eventCharCode;
             if(fromCoords){
                 eventCharCode = 
-                (/^[a-zA-Z]$/.test(findChar)) ?
+                (/^[a-zA-Z\s]$/.test(findChar)) ?
                 //seems like e.keycode and e.keycodeUpper are not reliable...
                 this.keyboard.charCodeFromCoordinates(e.screenX, e.screenY) :
                 e.keycode;
-            }else{
+            } else {
                 eventCharCode = e.keycode;
             }
             
             var eventChar = String.fromCharCode(eventCharCode);
 
-            //for now, only focus on touch end events
-            if(e.type == TouchEventType.touchend && (findChar == eventChar || findChar == eventChar.toUpperCase())){
+            if(findChar == eventChar || findChar == eventChar.toUpperCase()){
                 return i;
             }
         };
@@ -109,18 +112,10 @@ class Keyboard {
         var key: IKey;
         for (var i = 0; i < this.keys.length; ++i) {
             key = this.keys[i];
+            var dim = this._getKeyDimensions(key);
 
-            var cssMargin = key.height/4.3*0.4;
-
-            var keyX = key.x, keyWidth = key.width;
-
-            if(key.code == 97 || key.code == 65){
-                keyX = 0;
-                keyWidth = key.width * 1.5;
-            }
-
-            if((keyX <= x && keyX + keyWidth > x) &&
-                (key.y + this.heightOffset <= y && key.y + this.heightOffset + (key.height + 2 * cssMargin) >= y)){
+            if((dim.x <= x && dim.x + dim.width > x) &&
+                (dim.y <= y && dim.y + dim.height > y)){
                 return key.code;
             }
         }
@@ -132,10 +127,38 @@ class Keyboard {
         this.context.strokeRect(0, this.heightOffset, this.width ,this.height); 
         
         //draw key outlines
+        var key: IKey;
         for (var i = 0; i < this.keys.length; i++) {
-            var k = this.keys[i];
-            var cssMargin = k.height/4.3*0.4;
-            this.context.strokeRect(k.x, k.y + this.heightOffset - cssMargin, k.width, k.height + 2 * cssMargin);    
+            var dim = this._getKeyDimensions(this.keys[i]);
+
+            //var k = this.keys[i];
+            //var cssMargin = k.height/4.3*0.4;
+            this.context.strokeRect(dim.x, dim.y, dim.width, dim.height);    
+        };
+    }
+
+    private _getKeyDimensions(key: IKey){
+        var cssMargin = key.height/4.3*0.4;
+
+        var keyX = key.x, 
+            keyWidth = key.width,
+            keyHeight = key.height + 2 * cssMargin,
+            keyY = key.y - cssMargin + this.heightOffset;
+
+        if(key.code === 97 || key.code === 65){
+            keyX = 0;
+            keyWidth = key.width * 1.5;
+        }
+
+        if(key.code === 108 || key.code === 76){
+            keyWidth = key.width * 1.5;
+        }
+
+        return {
+            x: keyX,
+            y: keyY,
+            width: keyWidth,
+            height: keyHeight
         };
     }
 }
