@@ -8,16 +8,20 @@
       '<script defer src="//cdnjs.cloudflare.com/ajax/libs/es6-shim/0.11.0/es6-shim.min.js"><' + '/script>');
   }
   </script>
+  <script type="text/javascript" src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+  <script type="text/javascript" src="//cdn.datatables.net/1.10.5/js/jquery.dataTables.min.js"></script>
   <script defer src="results/js/utils.js"></script>
   <script defer src="results/js/models.js"></script>
   <script defer src="results/js/keyboard.js"></script>
   <script defer src="results/js/app.js"></script>
+  <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.5/css/jquery.dataTables.css">
 </head>
 <body>
   <section>
     <input id="nickname-input" value="brianweet" />
     <button id="get-results-button">Get results</button>
     <button id="export-button" hidden>Export</button>
+    <button id="calculate-button" hidden>Calculate model</button>
   </section>
   <section>
     <select id="session-select" hidden></select>
@@ -25,7 +29,7 @@
   <section>
     <select id="sentence-select" hidden></select>
   </section>
-  <section>
+  <section id="sentence-info" hidden>
     <p>
       <strong>
         Actual sentence
@@ -52,8 +56,12 @@
     </p>
   </section>
   <section>
+    <p>Click on a key in the canvas below to calculate character probability</p>
     <canvas id="result-canvas" style="border:1px solid #000000;"></canvas>
     <iframe id="emulate-frame" src="/emulate/index.html" style="border:1px solid #000000;"></iframe>
+    <table id="probablility-results">
+      
+    </table>
   </section>
 </body>
 </html>

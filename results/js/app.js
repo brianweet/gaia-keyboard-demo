@@ -29,12 +29,15 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 	'nickname-input',
 	'get-results-button',
 	'export-button',
+	'calculate-button',
 	'emulate-frame',
+	'sentence-info',
 	'sentence-select',
 	'session-select',
 	'sentence-span',
 	'result-span',
-	'dist-span'
+	'dist-span',
+	'probablility-results'
 	];
 
 	var AppManager = {
@@ -56,9 +59,11 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 
 		this.canvasCtx = this.dom.resultCanvas.getContext('2d');
 		this.dom.resultCanvas.addEventListener('mousemove',this);
+		this.dom.resultCanvas.addEventListener('click',this);
 
 		this.dom.getResultsButton.addEventListener('click',this);
 		this.dom.exportButton.addEventListener('click',this);
+		this.dom.calculateButton.addEventListener('click',this);
 		this.dom.sentenceSelect.addEventListener('change',this);
 		this.dom.sessionSelect.addEventListener('change',this);
 	  },
@@ -73,6 +78,9 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 	  			break;
 	  		case this.dom.exportButton:
 	  			exportData.call(this);
+	  			break;
+  			case this.dom.calculateButton:
+	  			calculateModel.call(this);
 	  			break;
 	  		case this.dom.sentenceSelect:
 	  			handleSentenceSelectChange.call(this, evt);
@@ -105,19 +113,57 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 	  	}
 	}
 
+	function calculateModel(){
+		var anEv = [];
+		for (var i = 0; i < this.results.sentences.length; i++) {
+			var newEv = AnnotationHelper.getAnnotatedEvents(this.renderer.keyboard, this.results.sentences[i]);
+			anEv = anEv.concat(newEv);
+		};
+
+		var modGen = new ModelGenerator(anEv, this.renderer.keyboard.keys);
+		this.model = modGen.calculate();
+	}
+
 	function handleCanvasEvent(evt){
 		if(!this.renderer)
   			return;
 
-  		var coords = this.dom.resultCanvas.relMouseCoords(evt);
+		var coords = this.dom.resultCanvas.relMouseCoords(evt);
   		var charCode = this.renderer.keyboard.charCodeFromCoordinates(coords.x, coords.y);
-  		if(charCode != this.renderer.renderedCharCode){
-  			this.canvasCtx.clearRect(0, 0, this.dom.resultCanvas.width, this.dom.resultCanvas.height);
-  			this.renderer.render(charCode);
-  		}
+
+		if(evt.type === 'mousemove'){
+			if(charCode != this.renderer.renderedCharCode){
+	  			this.canvasCtx.clearRect(0, 0, this.dom.resultCanvas.width, this.dom.resultCanvas.height);
+	  			this.renderer.render(charCode);
+	  		}	
+		} else {
+			if(charCode && this.model){
+				if(!this.probablilityResultsTable)
+			    this.probablilityResultsTable = $(this.dom.probablilityResults).dataTable({
+			        "data": [],
+			        "columns": [
+			            { "title": "Char" },
+			            { "title": "Prob x" },
+			            { "title": "Prob y" },
+			            { "title": "Prob combined" }
+			        ],
+					"paging": false
+			    }).DataTable();   
+	    
+				this.probablilityResultsTable.rows().remove();
+
+	  			for (var i = 0; i < this.model.length; i++) {
+	  				var prob = this.model[i].stat.getProbability(coords.x, coords.y);
+	  				this.probablilityResultsTable.row.add([ this.model[i].char, prob.x, prob.y, prob.combined ]);
+	  			};
+	  			this.probablilityResultsTable
+			    .order([ 3, "desc" ])
+			    .draw();
+  			}	
+		}
 	}
 
-	function handleSessionSelectChange(evt){
+	function handleSessionSelectChange(){
 		var session = this.highscores.filter(function(s){
 			return s.RowKey == this.dom.sessionSelect.value;
 		}.bind(this))[0];
@@ -129,13 +175,21 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 			return s.id == this.dom.sentenceSelect.value;
 		}.bind(this))[0];
 
+		if(!sentenceRes){
+			this.sentenceInfo.hidden = true;
+			this.canvasCtx.clearRect(0, 0, this.dom.resultCanvas.width, this.dom.resultCanvas.height);
+			this.renderer.setSentenceResults(this.results.sentences);
+			this.renderer.render();
+			return;
+		}
+
+		this.sentenceInfo.hidden = false;
 		this.dom.sentenceSpan.textContent = sentenceRes.sentence.s;
 		this.dom.resultSpan.textContent = sentenceRes.typedSequence;
 		this.dom.distSpan.textContent = Utils.getEditDistance(sentenceRes.sentence.s, sentenceRes.typedSequence);
 
 		this.canvasCtx.clearRect(0, 0, this.dom.resultCanvas.width, this.dom.resultCanvas.height);
-		this.renderer.sentenceResults.length = 0;
-		this.renderer.sentenceResults.push(sentenceRes);
+		this.renderer.setSentenceResults([sentenceRes]);
 		this.renderer.render();
 		
 		if(sentenceRes.data.length)
@@ -176,13 +230,16 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 		    opt.value = current.RowKey;
 		    this.appendChild(opt);
 		});
+
+		this.dom.sessionSelect.value = options[0].RowKey;
+		handleSessionSelectChange.call(this);
 	}
 
 	function fillSentenceSelect(options){
 		var opt;
 		fillSelect(this.dom.sentenceSelect, 'Select a sentence to emulate', options, function(current){
 			opt = document.createElement('option');
-		    opt.innerHTML = current.sentence.id + ':' + current.sentence.s.slice(0, 25) + ' (' + current.wrongCharCount + ' wrong)' ;
+		    opt.innerHTML = current.sentence.id + ':' + current.sentence.s + ' (' + current.wrongCharCount + ' wrong)' ;
 		    opt.value = current.id;
 		    this.appendChild(opt);
 		});
@@ -205,6 +262,8 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 	}
 
 	function processData(results){
+		this.dom.calculateButton.hidden = false;
+
 		this.results = results;
 		this.setScreenDimensions(results.session.screenDimensions);
 		var offset = results.session.screenDimensions.height - results.session.keys.height;
@@ -213,6 +272,7 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 		this.renderer.render();
 
 		fillSentenceSelect.call(this, results.sentences);
+		calculateModel.call(this);
   	}
 
   	function download(stringToDownload, filename){
@@ -223,7 +283,6 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 		hiddenElement.download = filename;
 		hiddenElement.click();
   	}
-
 	
 
 	exports.Utils = Utils;

@@ -26,6 +26,12 @@ interface ISentence {
     s: string;
 }
 
+interface IAnnotatedTouchEvent extends IRecordedTouchEvent{
+    isCorrect: boolean;
+    correctCharCode: number;
+    distanceToCorrectKey: number;
+}
+
 interface IRecordedTouchEvent {
     type: TouchEventType;
     screenX: number;
@@ -39,6 +45,55 @@ interface IRecordedTouchEvent {
 
 interface IKey {
     code: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
+class KbKey implements IKey{
+    public code: number;
+    public x: number;
+    public y: number;
+    public height: number;
+    public width: number;
+
+    constructor(public heightOffset: number, key: IKey){
+        this.code = key.code;
+        var dim = this._calculateKeyDimensions(key);
+        this.x = dim.x;
+        this.y = dim.y;
+        this.width = dim.width;
+        this.height = dim.height;
+    }
+
+    private _calculateKeyDimensions(key: IKey){
+        var cssMargin = key.height/4.3*0.4;
+
+        var keyX = key.x, 
+            keyWidth = key.width,
+            keyHeight = key.height + 2 * cssMargin,
+            keyY = key.y - cssMargin + this.heightOffset;
+
+        if(key.code === 97 || key.code === 65){
+            keyX = 0;
+            keyWidth = key.width * 1.5;
+        }
+
+        if(key.code === 108 || key.code === 76){
+            keyWidth = key.width * 1.5;
+        }
+
+        return {
+            x: keyX,
+            y: keyY,
+            width: keyWidth,
+            height: keyHeight
+        };
+    }
+}
+
+interface IKeyDimensions {
     x: number;
     y: number;
     width: number;
