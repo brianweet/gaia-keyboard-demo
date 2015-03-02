@@ -185,7 +185,7 @@ KeyboardDemoApp.prototype.handleMessage = function(data) {
         document.body.style.paddingBottom = data.args[1] + 'px';
         this.container.classList.remove('transitioned-out');
 
-        this.inputMethodHandler.composition.scrollIntoView();
+        //this.inputMethodHandler.composition.scrollIntoView();
       }.bind(this));
 
       break;
