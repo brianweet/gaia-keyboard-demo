@@ -29,7 +29,6 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 	'nickname-input',
 	'get-results-button',
 	'export-button',
-	'calculate-button',
 	'emulate-frame',
 	'sentence-info',
 	'sentence-select',
@@ -37,7 +36,8 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 	'sentence-span',
 	'result-span',
 	'dist-span',
-	'probablility-results'
+	'probablility-results',
+	'inject-model'
 	];
 
 	var AppManager = {
@@ -47,6 +47,9 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 	  canvasCtx: {},
 
 	  init: function init() {
+	  	// if(window.localStorage)
+	  	// 	window.localStorage.clear();
+
 	    this.isInitialized = true;
 
 	    // first time here: cache DOM elements
@@ -60,10 +63,9 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 		this.canvasCtx = this.dom.resultCanvas.getContext('2d');
 		this.dom.resultCanvas.addEventListener('mousemove',this);
 		this.dom.resultCanvas.addEventListener('click',this);
-
 		this.dom.getResultsButton.addEventListener('click',this);
+		this.dom.injectModel.addEventListener('click',this);
 		this.dom.exportButton.addEventListener('click',this);
-		this.dom.calculateButton.addEventListener('click',this);
 		this.dom.sentenceSelect.addEventListener('change',this);
 		this.dom.sessionSelect.addEventListener('change',this);
 	  },
@@ -79,14 +81,23 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 	  		case this.dom.exportButton:
 	  			exportData.call(this);
 	  			break;
-  			case this.dom.calculateButton:
-	  			calculateModel.call(this);
-	  			break;
 	  		case this.dom.sentenceSelect:
 	  			handleSentenceSelectChange.call(this, evt);
 	  			break;
 	  		case this.dom.sessionSelect:
 	  			handleSessionSelectChange.call(this, evt);
+	  			break;
+	  		case this.dom.injectModel:
+	  			var map = {};
+	  			for (var i = 0; i < this.model.length; i++) {
+	  				map[this.model[i].char.charCodeAt(0)] = this.model[i].stat;
+	  			};
+	  			debugger;
+	  			this.dom.emulateFrame.contentWindow.postMessage({
+					api: 'demo',
+					method: 'injectModel',
+					data: map
+				}, '*');
 	  			break;
 	  	}
 	  },
@@ -143,9 +154,7 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 			        "data": [],
 			        "columns": [
 			            { "title": "Char" },
-			            { "title": "Prob x" },
-			            { "title": "Prob y" },
-			            { "title": "Prob combined" }
+			            { "title": "gauss pdf" }
 			        ],
 					"paging": false
 			    }).DataTable();   
@@ -153,11 +162,11 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 				this.probablilityResultsTable.rows().remove();
 
 	  			for (var i = 0; i < this.model.length; i++) {
-	  				var prob = this.model[i].stat.getProbability(coords.x, coords.y);
-	  				this.probablilityResultsTable.row.add([ this.model[i].char, prob.x, prob.y, prob.combined ]);
+	  				var prob = this.model[i].stat.calcGauss(coords.x, coords.y);
+	  				this.probablilityResultsTable.row.add([ this.model[i].char, prob ]);
 	  			};
 	  			this.probablilityResultsTable
-			    .order([ 3, "desc" ])
+			    .order([ 1, "desc" ])
 			    .draw();
   			}	
 		}
@@ -167,7 +176,8 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 		var session = this.highscores.filter(function(s){
 			return s.RowKey == this.dom.sessionSelect.value;
 		}.bind(this))[0];
-		processData.call(this, session);
+		if(session)
+			processData.call(this, session);
 	}
 
 	function handleSentenceSelectChange(evt){
@@ -176,14 +186,14 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 		}.bind(this))[0];
 
 		if(!sentenceRes){
-			this.sentenceInfo.hidden = true;
+			this.dom.sentenceInfo.hidden = true;
 			this.canvasCtx.clearRect(0, 0, this.dom.resultCanvas.width, this.dom.resultCanvas.height);
 			this.renderer.setSentenceResults(this.results.sentences);
 			this.renderer.render();
 			return;
 		}
 
-		this.sentenceInfo.hidden = false;
+		this.dom.sentenceInfo.hidden = false;
 		this.dom.sentenceSpan.textContent = sentenceRes.sentence.s;
 		this.dom.resultSpan.textContent = sentenceRes.typedSequence;
 		this.dom.distSpan.textContent = Utils.getEditDistance(sentenceRes.sentence.s, sentenceRes.typedSequence);
@@ -201,6 +211,7 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 	}
 
 	function loadData(){
+		this.dom.injectModel.hidden = 
 		this.dom.sentenceSelect.hidden = 
 		this.dom.sessionSelect.hidden = true;
 		if(window.localStorage){
@@ -223,6 +234,8 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 	}
 
 	function fillSessionSelect(options){
+		this.dom.injectModel.hidden = false;
+		
 		var opt;
 		fillSelect(this.dom.sessionSelect, 'Select a session', options, function(current){
 			opt = document.createElement('option');
@@ -262,8 +275,6 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 	}
 
 	function processData(results){
-		this.dom.calculateButton.hidden = false;
-
 		this.results = results;
 		this.setScreenDimensions(results.session.screenDimensions);
 		var offset = results.session.screenDimensions.height - results.session.keys.height;

@@ -249,6 +249,7 @@ var ModelGenerator = (function () {
     function ModelGenerator(events, keys) {
         this.events = events;
         this.keys = keys;
+        this._minModelEvents = 100;
         this.randomKeyEvents = {};
         for (var i = 0; i < keys.length; ++i) {
             var key = keys[i];
@@ -270,18 +271,19 @@ var ModelGenerator = (function () {
         });
     }
     ModelGenerator.prototype.rnd = function () {
+        // Look for better normal distributed random generator
         return ((Math.random() + Math.random() + Math.random() + Math.random() + Math.random() + Math.random()) - 3) / 3;
     };
     ModelGenerator.prototype.calculate = function () {
         var result = [];
-        var forChars = 'abcdefghijklmnopqrstuvwxyz'.split('');
+        var forChars = 'abcdefghijklmnopqrstuvwxyz.,'.split('');
         for (var i = 0; i < forChars.length; i++) {
             var charCode = forChars[i].charCodeAt(0);
             var charEvents = this.events.filter(function (ev) {
                 return ev.distanceToCorrectKey < 32 && (+ev.correctCharCode === +charCode || +ev.correctCharCode === +charCode);
             });
-            // add random events to come to a total of 100 events
-            var allEvents = (charEvents.length < 100) ? charEvents.concat(this.randomKeyEvents[charCode].slice(0, 100 - charEvents.length)) : charEvents.slice(0, 100);
+            // add random events to end up with a total of 100 events
+            var allEvents = (charEvents.length < this._minModelEvents) ? charEvents.concat(this.randomKeyEvents[charCode].slice(0, 100 - charEvents.length)) : charEvents.slice(0, 100);
             var x = allEvents.map(function (ev) {
                 return ev.screenX;
             });
@@ -336,26 +338,77 @@ var ModelGenerator = (function () {
         if (isNaN(varianceX))
             return;
         else
-            return new KeyDistibution(meanX, meanY, varianceX, varianceY, covariance);
+            return new KeyDistribution(meanX, meanY, varianceX, varianceY, covariance);
     };
     return ModelGenerator;
 })();
-var KeyDistibution = (function () {
-    function KeyDistibution(meanX, meanY, varianceX, varianceY, covariance) {
+var KeyDistribution = (function () {
+    function KeyDistribution(meanX, meanY, varianceX, varianceY, covariance) {
         this.meanX = meanX;
         this.meanY = meanY;
         this.varianceX = varianceX;
         this.varianceY = varianceY;
         this.covariance = covariance;
-        this.variance = varianceX + varianceY + 2 * covariance;
+        this.inputMatrix = [];
+        this.inputMatrix[0] = [varianceX, covariance];
+        this.inputMatrix[1] = [covariance, varianceY];
+        this.determinant = varianceX * varianceY - covariance * covariance;
+        this.inverseMatrix = this._getInverseMatrix(this.inputMatrix, this.determinant);
     }
-    KeyDistibution.prototype.getProbability = function (x, y) {
-        var sqx = (this.meanX - x) * (this.meanX - x);
-        var sqy = (this.meanY - y) * (this.meanY - y);
-        var dist = Math.sqrt(sqx + sqy);
-        var testX = Math.exp(-(Math.pow(Math.abs(x - this.meanX), 2) / Math.pow(this.varianceX, 2)));
-        var testY = Math.exp(-(Math.pow(Math.abs(y - this.meanY), 2) / Math.pow(this.varianceY, 2)));
-        return { x: testX, y: testY, combined: testX * testY };
+    KeyDistribution.prototype._getDeterminant = function (matrix) {
+        //[a b; c d]
+        //det = ad - bc
+        return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
     };
-    return KeyDistibution;
+    KeyDistribution.prototype._getInverseMatrix = function (matrix, determinant) {
+        // I = [1 0; 0 1] = identity matrix
+        // A = [a b; c d] = [varX cov; cov varY] = input matrix
+        // A^-1 = [? ?;? ?] = inverse matrix
+        // Where A * A^-1 = I
+        // Steps:
+        // A^-1 = 1/det(A) * adj(A)
+        // det(A) = a*d - b*c
+        // adj(A) = [d -b; -c a] = [varY -cov; -cov varX]
+        var inverseMatrix = [];
+        inverseMatrix[0] = [];
+        inverseMatrix[1] = [];
+        //Take negative
+        inverseMatrix[0][1] = inverseMatrix[1][0] = -matrix[0][1] / determinant;
+        //swap a and d
+        inverseMatrix[0][0] = matrix[1][1] / determinant;
+        inverseMatrix[1][1] = matrix[0][0] / determinant;
+        return inverseMatrix;
+    };
+    KeyDistribution.prototype.calcGauss = function (x, y) {
+        //var sqx = (this.meanX - x)*(this.meanX - x);
+        //var sqy = (this.meanY - y)*(this.meanY - y);
+        //var dist = Math.sqrt(sqx+sqy);
+        //var testX = Math.exp(-(Math.pow(Math.abs(x - this.meanX),2) / Math.pow(this.varianceX, 2)));
+        //var testY = Math.exp(-(Math.pow(Math.abs(y - this.meanY),2) / Math.pow(this.varianceY, 2)));
+        //return {x: testX, y: testY, combined: testX * testY};
+        // pdf = (2*Math.PI)^(-dimensions/2) * determinant^.5 * e^(-1/2 * ([x y]-[meanX meanY])' * inverseMatrix * ([x y]-[meanX meanY]))
+        // mu as row vector [muX muY]
+        // subtract mu from x and y
+        // Subtract mu from given coordinate
+        // [x y]-[meanX meanY]
+        x = x - this.meanX;
+        y = y - this.meanY;
+        // Rewrite original formula (for 2 dimensions)
+        // We remove (2*Math.PI)^(-dimensions/2) from the original formula as it is just a weight/constant
+        // pdf = determinant^.5 * e^(-1/2 * ([x y]-[meanX meanY])' * inverseMatrix * ([x y]-[meanX meanY]))
+        //  Multiply the inversematrix with new x and y 'vector'
+        //  inverseMatrix * ([x y]-[meanX meanY])
+        var v1 = this.inverseMatrix[0][0] * x + this.inverseMatrix[0][1] * y;
+        var v2 = this.inverseMatrix[1][0] * x + this.inverseMatrix[1][1] * y;
+        // Multiply new variables with ([x y]-[meanX meanY])'
+        // ([x y]-[meanX meanY])' * inverseMatrix * ([x y]-[meanX meanY])
+        var v3 = x * v1 + y * v2;
+        // Now fill in all calculations in the 
+        var result = Math.sqrt(this.determinant) * Math.exp(-.5 * v3);
+        var rhs = Math.exp(-.5 * v3);
+        var result2 = Math.exp(-.5 * v3) / (2 * Math.PI * Math.sqrt(this.determinant));
+        var result3 = Math.pow(2 * Math.PI, (-2 / 2)) * Math.pow(this.determinant, -0.5) * rhs;
+        return result2;
+    };
+    return KeyDistribution;
 })();
