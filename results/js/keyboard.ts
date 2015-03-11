@@ -1,5 +1,6 @@
 ///<reference path="lib.dom.d.ts" />
 ///<reference path="models.ts" />
+///<reference path="bivargauss.ts" />
 "use strict";
 
 class AnnotationHelper {
@@ -322,9 +323,9 @@ class ModelGenerator {
             var x = allEvents.map((ev) => { return ev.screenX });
             var y = allEvents.map((ev) => { return ev.screenY });
 
-            var covariance = this._covar(x, y);
-            if(covariance)
-            result.push({char: forChars[i], stat: covariance});
+            var distr = BivariateGauss.getDistributionStatistics(x, y);
+            if(distr)
+                result.push({char: forChars[i], stat: distr});
         }
         console.log(result);
 
@@ -337,137 +338,6 @@ class ModelGenerator {
         console.log('[' + sigma.join(';') + ']');
         
         return result;
-    }
-
-    private _mean(x: number[]){
-        var sum = 0;
-        for (var i = 0; i < x.length; i++) {
-            sum += x[i];
-        }
-        var mean = sum/x.length;
-        return mean;
-    }
-    private _variance(x: number[], mean?: number){
-        if(!mean)
-            mean = this._mean(x);
-
-        var variance = 0;
-        for (var i = 0; i < x.length; i++) {
-            variance += Math.pow(x[i] - mean, 2);
-        }     
-        variance = variance / (x.length - 1);
-        return variance
-    }
-
-    private _covar(x: number[], y: number[]){
-        var meanX = this._mean(x),
-            meanY = this._mean(y),
-            covariance = 0,
-            varianceX = 0,
-            varianceY = 0;
-
-        for (var i = 0; i < x.length; i++) {
-            varianceX += Math.pow(+x[i] - meanX, 2);
-            varianceY += Math.pow(+y[i] - meanY, 2);
-            covariance += (+x[i] - meanX)*(+y[i] - meanY);
-        }
-        
-        varianceX = varianceX / (x.length - 1);
-        varianceY = varianceY / (x.length - 1);
-        covariance = covariance / (x.length -1);
-        if(isNaN(varianceX))
-            return;
-        else
-            return new KeyDistribution(meanX, meanY, varianceX, varianceY, covariance);
-    }
-
-
-}
-
-class KeyDistribution {
-    public determinant: number;
-    public inputMatrix: Array<Array<number>>;
-    public inverseMatrix: Array<Array<number>>;
-    constructor(public meanX: number, 
-                public meanY: number, 
-                public varianceX: number, 
-                public varianceY: number, 
-                public covariance: number){
-        this.inputMatrix = [];
-        this.inputMatrix[0] = [varianceX, covariance];
-        this.inputMatrix[1] = [covariance, varianceY];
-        this.determinant = varianceX * varianceY - covariance * covariance;
-        this.inverseMatrix = this._getInverseMatrix(this.inputMatrix, this.determinant);
-    }
-
-    private _getDeterminant(matrix: Array<Array<number>>){
-        //[a b; c d]
-        //det = ad - bc
-        return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
-    }
-
-    private _getInverseMatrix(matrix: Array<Array<number>>, determinant: number){
-        // I = [1 0; 0 1] = identity matrix
-        // A = [a b; c d] = [varX cov; cov varY] = input matrix
-        // A^-1 = [? ?;? ?] = inverse matrix
-        // Where A * A^-1 = I
-
-        // Steps:
-        // A^-1 = 1/det(A) * adj(A)
-        // det(A) = a*d - b*c
-        // adj(A) = [d -b; -c a] = [varY -cov; -cov varX]
-                
-        var inverseMatrix = [];
-        inverseMatrix[0] = [];
-        inverseMatrix[1] = [];
-        
-        //Take negative
-        inverseMatrix[0][1] =
-        inverseMatrix[1][0] = -matrix[0][1] / determinant;
-        //swap a and d
-        inverseMatrix[0][0] = matrix[1][1] / determinant;
-        inverseMatrix[1][1] = matrix[0][0] / determinant;
-        return inverseMatrix;
-    }
-
-    calcGauss(x: number, y: number){
-        //var sqx = (this.meanX - x)*(this.meanX - x);
-        //var sqy = (this.meanY - y)*(this.meanY - y);
-        //var dist = Math.sqrt(sqx+sqy);
-
-        //var testX = Math.exp(-(Math.pow(Math.abs(x - this.meanX),2) / Math.pow(this.varianceX, 2)));
-        //var testY = Math.exp(-(Math.pow(Math.abs(y - this.meanY),2) / Math.pow(this.varianceY, 2)));
-        //return {x: testX, y: testY, combined: testX * testY};
-
-        // pdf = (2*Math.PI)^(-dimensions/2) * determinant^.5 * e^(-1/2 * ([x y]-[meanX meanY])' * inverseMatrix * ([x y]-[meanX meanY]))
-        // mu as row vector [muX muY]
-        // subtract mu from x and y
-
-        // Subtract mu from given coordinate
-        // [x y]-[meanX meanY]
-        x = x - this.meanX;
-        y = y - this.meanY;
-
-        // Rewrite original formula (for 2 dimensions)
-        // We remove (2*Math.PI)^(-dimensions/2) from the original formula as it is just a weight/constant
-        // pdf = determinant^.5 * e^(-1/2 * ([x y]-[meanX meanY])' * inverseMatrix * ([x y]-[meanX meanY]))
-        
-
-        //  Multiply the inversematrix with new x and y 'vector'
-        //  inverseMatrix * ([x y]-[meanX meanY])
-        var v1 = this.inverseMatrix[0][0] * x + this.inverseMatrix[0][1] * y;
-        var v2 = this.inverseMatrix[1][0] * x + this.inverseMatrix[1][1] * y;
-        // Multiply new variables with ([x y]-[meanX meanY])'
-        // ([x y]-[meanX meanY])' * inverseMatrix * ([x y]-[meanX meanY])
-        var v3 = x * v1 + y * v2;
-        // Now fill in all calculations in the 
-        var result = Math.sqrt(this.determinant) * Math.exp(-.5 * v3);
-
-        var rhs = Math.exp(-.5 * v3);
-        var result2 = Math.exp(-.5 * v3) / (2 * Math.PI * Math.sqrt(this.determinant));
-        var result3 = Math.pow(2 * Math.PI, (-2 / 2)) * Math.pow(this.determinant, -0.5) * rhs;
-        
-        return result2;
     }
 }
 
