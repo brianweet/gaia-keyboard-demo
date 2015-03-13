@@ -124,6 +124,10 @@
     var touchEvent = 
             {
               type: type,
+              touchId: evt.identifier,
+              radiusX: evt.radiusX,
+              radiusY: evt.radiusY,
+              rotationAngle: evt.rotationAngle, 
               screenX: evt.clientX,
               screenY: evt.clientY,
               keycode: evt.target.dataset.keycode,

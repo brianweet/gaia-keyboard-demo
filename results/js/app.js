@@ -227,6 +227,11 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 	  	}
 
 	  	Utils.getJSON('/api/results/' + this.dom.nicknameInput.value).then(function(res){
+	  		if(!res){
+	  			alert('Couldn\'t find any results');
+	  			return;
+	  		}
+
 	  		if(window.localStorage)
 	  			window.localStorage.setItem(this.dom.nicknameInput.value, res);
 	  		var highscores = JSON.parse(res);
