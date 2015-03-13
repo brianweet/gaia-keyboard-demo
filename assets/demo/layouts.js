@@ -83,7 +83,7 @@ var KeyboardLayouts = function(app) {
     to show case the diversity of the feature the keyboard app
     and IMEngine provided. */
   this.enabledLayouts =
-    ['en'].sort();
+    ['en-Custom'].sort();
 
   this.currentLayout = undefined;
 
@@ -106,6 +106,7 @@ var KeyboardLayouts = function(app) {
   layouts.set('en-Dvorak', 'Dvorak');
   layouts.set('en-Neo', 'Neo');
   layouts.set('en', 'English');
+  layouts.set('en-Custom', 'English');
   layouts.set('eo', 'Esperanto');
   layouts.set('es-Americas', 'Español (Latinoamérica)');
   layouts.set('es', 'Español');
@@ -154,7 +155,7 @@ var KeyboardLayouts = function(app) {
 
 KeyboardLayouts.prototype.SETTINGS_MENU_ELEMENT_ID = 'settings-menu';
 
-KeyboardLayouts.prototype.DEFAULT_LAYOUT = 'en';
+KeyboardLayouts.prototype.DEFAULT_LAYOUT = 'en-Custom';
 
 KeyboardLayouts.prototype.start = function() {
   var hash = window.location.hash.substr(1);

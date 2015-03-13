@@ -197,7 +197,7 @@ KeyboardDemoApp.prototype.handleMessage = function(data) {
           method: 'stopEmulateTouchEvents',
           data: data.data
         });
-      }else if(data.method === 'emulateStopped'){
+      } else if(data.method === 'emulateStopped'){
         this.inputMethodHandler.clear();
         this.postMessage({
           api: 'inputmethod',
@@ -211,6 +211,12 @@ KeyboardDemoApp.prototype.handleMessage = function(data) {
         this.postMessage({
           api: 'api',
           method: 'startEmulateTouchEvents',
+          data: data.data
+        });
+      } else if(data.method === 'injectModel'){
+        this.postMessage({
+          api: 'api',
+          method: 'injectModel',
           data: data.data
         });
       }
