@@ -1,4 +1,4 @@
-class BivariateGauss {
+class BivariateGaussHelper {
     private _mean(x: number[]){
         var sum = 0;
         for (var i = 0; i < x.length; i++) {
@@ -17,28 +17,6 @@ class BivariateGauss {
         }     
         variance = variance / (x.length - 1);
         return variance
-    }
-
-    static getDistributionStatistics(x: number[], y: number[]){
-        var meanX = this.prototype._mean(x),
-            meanY = this.prototype._mean(y),
-            covariance = 0,
-            varianceX = 0,
-            varianceY = 0;
-
-        for (var i = 0; i < x.length; i++) {
-            varianceX += Math.pow(+x[i] - meanX, 2);
-            varianceY += Math.pow(+y[i] - meanY, 2);
-            covariance += (+x[i] - meanX)*(+y[i] - meanY);
-        }
-        
-        varianceX = varianceX / (x.length - 1);
-        varianceY = varianceY / (x.length - 1);
-        covariance = covariance / (x.length -1);
-        if(isNaN(varianceX))
-            return;
-        else
-            return new KeyDistribution(meanX, meanY, varianceX, varianceY, covariance);
     }
 
     static getDeterminant(matrix: Array<Array<number>>){
@@ -79,46 +57,91 @@ class BivariateGauss {
         return inverseMatrix;
     }
 
-    static pdf(keydist: KeyDistribution, x: number, y: number){
+    static getDistributionStatistics(x: number[], y: number[]){
+        var meanX = this.prototype._mean(x),
+            meanY = this.prototype._mean(y),
+            covariance = 0,
+            varianceX = 0,
+            varianceY = 0;
+
+        for (var i = 0; i < x.length; i++) {
+            varianceX += Math.pow(+x[i] - meanX, 2);
+            varianceY += Math.pow(+y[i] - meanY, 2);
+            covariance += (+x[i] - meanX)*(+y[i] - meanY);
+        }
+        
+        varianceX = varianceX / (x.length - 1);
+        varianceY = varianceY / (x.length - 1);
+        covariance = covariance / (x.length -1);
+        if(isNaN(varianceX))
+            return;
+        else
+            return new KeyDistributionParameters(meanX, meanY, varianceX, varianceY, covariance);
+    }
+}
+
+
+class BivariateGauss {
+    public keyDistribution: KeyDistributionParameters;
+    public determinant: number;
+    public covMatrix: Array<Array<number>>;
+    public inverseMatrix: Array<Array<number>>;
+    
+    constructor(keyDistribution: KeyDistributionParameters){
+        this.keyDistribution = keyDistribution;
+        this.covMatrix = [];
+        this.covMatrix[0] = [keyDistribution.varianceX, keyDistribution.covariance];
+        this.covMatrix[1] = [keyDistribution.covariance, keyDistribution.varianceY];
+        this.determinant = BivariateGaussHelper.getDeterminant(this.covMatrix);
+        this.inverseMatrix = BivariateGaussHelper.getInverseMatrix(this.covMatrix, this.determinant);
+    }
+    
+    public pdf(x: number, y: number){
         // pdf = (2*Math.PI)^(-nrOfDimensions/2) * determinant^.5 * e^(-1/2 * ([x y]-[meanX meanY])' * inverseMatrix * ([x y]-[meanX meanY]))
         // mu as row vector [muX muY]
 
         // Subtract mu from given coordinate
         // [x y]-[muX muY]
-        x = x - keydist.meanX;
-        y = y - keydist.meanY;
+        x = x - this.keyDistribution.meanX;
+        y = y - this.keyDistribution.meanY;
 
         
         //  Multiply the inversematrix with new x and y 'vector'
         //  inverseMatrix * ([x y]-[muX muY])
-        var v1 = keydist.inverseMatrix[0][0] * x + keydist.inverseMatrix[0][1] * y;
-        var v2 = keydist.inverseMatrix[1][0] * x + keydist.inverseMatrix[1][1] * y;
+        var v1 = this.inverseMatrix[0][0] * x + this.inverseMatrix[0][1] * y;
+        var v2 = this.inverseMatrix[1][0] * x + this.inverseMatrix[1][1] * y;
         // Multiply new variables with ([x y]-[muX muY])'
         // ([x y]-[muX muY])' * inverseMatrix * ([x y]-[muX muY])
         var v3 = x * v1 + y * v2;
 
-        var result = Math.exp(-.5 * v3) / (2 * Math.PI * Math.sqrt(keydist.determinant));
+        var result = Math.exp(-.5 * v3) / (2 * Math.PI * Math.sqrt(this.determinant));
         return result;
+    }
+
+    public mahalanobis(x: number, y: number){
+        // Subtract mu from given coordinate
+        // [x y]-[muX muY]
+        x = x - this.keyDistribution.meanX;
+        y = y - this.keyDistribution.meanY;
+
+        
+        //  Multiply the inversematrix with new x and y 'vector'
+        //  inverseMatrix * ([x y]-[muX muY])
+        var v1 = this.inverseMatrix[0][0] * x + this.inverseMatrix[0][1] * y;
+        var v2 = this.inverseMatrix[1][0] * x + this.inverseMatrix[1][1] * y;
+        // Multiply new variables with ([x y]-[muX muY])'
+        // ([x y]-[muX muY])' * inverseMatrix * ([x y]-[muX muY])
+        var v3 = x * v1 + y * v2;
+
+        return Math.sqrt(v3);
     }
 }
 
-class KeyDistribution {
-    public determinant: number;
-    public inputMatrix: Array<Array<number>>;
-    public inverseMatrix: Array<Array<number>>;
+class KeyDistributionParameters {
     constructor(public meanX: number, 
                 public meanY: number, 
                 public varianceX: number, 
                 public varianceY: number, 
                 public covariance: number){
-        this.inputMatrix = [];
-        this.inputMatrix[0] = [varianceX, covariance];
-        this.inputMatrix[1] = [covariance, varianceY];
-        this.determinant = BivariateGauss.getDeterminant(this.inputMatrix);
-        this.inverseMatrix = BivariateGauss.getInverseMatrix(this.inputMatrix, this.determinant);
-    }    
-
-    calcGauss(x: number, y: number){
-        BivariateGauss.pdf(this, x, y);
     }
 }

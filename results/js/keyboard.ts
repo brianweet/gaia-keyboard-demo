@@ -274,7 +274,7 @@ class Export {
 }
 
 class ModelGenerator {
-    private _minModelEvents = 100;
+    private _minModelEvents = 50;
     private randomKeyEvents = {};
     constructor(public events: IAnnotatedTouchEvent[], public keys: KbKey[]){
         // Generate random events woah
@@ -283,7 +283,7 @@ class ModelGenerator {
             var cx = key.x + key.width / 2;
             var cy = key.y + key.height / 2;
 
-            for (var j = 0; j < 100; ++j) {
+            for (var j = 0; j < this._minModelEvents; ++j) {
                 if(j === 0)
                     this.randomKeyEvents[key.code] = [];
 
@@ -310,9 +310,10 @@ class ModelGenerator {
         var result = [];
         var forChars = 'abcdefghijklmnopqrstuvwxyz.,'.split('');
         for (var i = 0; i < forChars.length; i++) {
-            var charCode = forChars[i].charCodeAt(0);
+            var currentChar = forChars[i];
+            var charCode = currentChar.charCodeAt(0);
             var charEvents = this.events.filter((ev) => { 
-                return ev.distanceToCorrectKey < 32 && (+ev.correctCharCode === +charCode || +ev.correctCharCode === +charCode) 
+                return ev.distanceToCorrectKey < 40 && (+ev.correctCharCode === +charCode || +ev.correctCharCode === +charCode) 
                 });
 
             // add random events to end up with a total of 100 events
@@ -323,19 +324,19 @@ class ModelGenerator {
             var x = allEvents.map((ev) => { return ev.screenX });
             var y = allEvents.map((ev) => { return ev.screenY });
 
-            var distr = BivariateGauss.getDistributionStatistics(x, y);
+            var distr = BivariateGaussHelper.getDistributionStatistics(x, y);
             if(distr)
-                result.push({char: forChars[i], stat: distr});
+                result.push({char: currentChar, stat: distr});
         }
-        console.log(result);
+        // console.log(result);
 
-        //mu = [0, 0];
-        //sigma = [.5 0; 0 .5];
-        var mu = result.map((r)=>{ return '[' + r.stat.meanX + ', ' + r.stat.meanY + ']' });
-        var sigma = result.map((r)=>{ return '[' + r.stat.varianceX + ', ' + r.stat.covariance + ';' +
-                                                r.stat.covariance + ',' + r.stat.varianceY + ']' });
-        console.log('[' + mu.join(';') + ']');
-        console.log('[' + sigma.join(';') + ']');
+        // //mu = [0, 0];
+        // //sigma = [.5 0; 0 .5];
+        // var mu = result.map((r)=>{ return '[' + r.stat.meanX + ', ' + r.stat.meanY + ']' });
+        // var sigma = result.map((r)=>{ return '[' + r.stat.varianceX + ', ' + r.stat.covariance + ';' +
+        //                                         r.stat.covariance + ',' + r.stat.varianceY + ']' });
+        // console.log('[' + mu.join(';') + ']');
+        // console.log('[' + sigma.join(';') + ']');
         
         return result;
     }

@@ -250,13 +250,13 @@ var ModelGenerator = (function () {
     function ModelGenerator(events, keys) {
         this.events = events;
         this.keys = keys;
-        this._minModelEvents = 100;
+        this._minModelEvents = 50;
         this.randomKeyEvents = {};
         for (var i = 0; i < keys.length; ++i) {
             var key = keys[i];
             var cx = key.x + key.width / 2;
             var cy = key.y + key.height / 2;
-            for (var j = 0; j < 100; ++j) {
+            for (var j = 0; j < this._minModelEvents; ++j) {
                 if (j === 0)
                     this.randomKeyEvents[key.code] = [];
                 this.randomKeyEvents[key.code].push({ screenX: this.rnd() * key.width / 2 + cx, screenY: this.rnd() * key.height / 2 + cy });
@@ -279,9 +279,10 @@ var ModelGenerator = (function () {
         var result = [];
         var forChars = 'abcdefghijklmnopqrstuvwxyz.,'.split('');
         for (var i = 0; i < forChars.length; i++) {
-            var charCode = forChars[i].charCodeAt(0);
+            var currentChar = forChars[i];
+            var charCode = currentChar.charCodeAt(0);
             var charEvents = this.events.filter(function (ev) {
-                return ev.distanceToCorrectKey < 32 && (+ev.correctCharCode === +charCode || +ev.correctCharCode === +charCode);
+                return ev.distanceToCorrectKey < 40 && (+ev.correctCharCode === +charCode || +ev.correctCharCode === +charCode);
             });
             // add random events to end up with a total of 100 events
             var allEvents = (charEvents.length < this._minModelEvents) ? charEvents.concat(this.randomKeyEvents[charCode].slice(0, 100 - charEvents.length)) : charEvents.slice(0, 100);
@@ -291,21 +292,18 @@ var ModelGenerator = (function () {
             var y = allEvents.map(function (ev) {
                 return ev.screenY;
             });
-            var distr = BivariateGauss.getDistributionStatistics(x, y);
+            var distr = BivariateGaussHelper.getDistributionStatistics(x, y);
             if (distr)
-                result.push({ char: forChars[i], stat: distr });
+                result.push({ char: currentChar, stat: distr });
         }
-        console.log(result);
-        //mu = [0, 0];
-        //sigma = [.5 0; 0 .5];
-        var mu = result.map(function (r) {
-            return '[' + r.stat.meanX + ', ' + r.stat.meanY + ']';
-        });
-        var sigma = result.map(function (r) {
-            return '[' + r.stat.varianceX + ', ' + r.stat.covariance + ';' + r.stat.covariance + ',' + r.stat.varianceY + ']';
-        });
-        console.log('[' + mu.join(';') + ']');
-        console.log('[' + sigma.join(';') + ']');
+        // console.log(result);
+        // //mu = [0, 0];
+        // //sigma = [.5 0; 0 .5];
+        // var mu = result.map((r)=>{ return '[' + r.stat.meanX + ', ' + r.stat.meanY + ']' });
+        // var sigma = result.map((r)=>{ return '[' + r.stat.varianceX + ', ' + r.stat.covariance + ';' +
+        //                                         r.stat.covariance + ',' + r.stat.varianceY + ']' });
+        // console.log('[' + mu.join(';') + ']');
+        // console.log('[' + sigma.join(';') + ']');
         return result;
     };
     return ModelGenerator;

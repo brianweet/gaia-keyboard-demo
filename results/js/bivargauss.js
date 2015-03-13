@@ -1,7 +1,7 @@
-var BivariateGauss = (function () {
-    function BivariateGauss() {
+var BivariateGaussHelper = (function () {
+    function BivariateGaussHelper() {
     }
-    BivariateGauss.prototype._mean = function (x) {
+    BivariateGaussHelper.prototype._mean = function (x) {
         var sum = 0;
         for (var i = 0; i < x.length; i++) {
             sum += x[i];
@@ -9,7 +9,7 @@ var BivariateGauss = (function () {
         var mean = sum / x.length;
         return mean;
     };
-    BivariateGauss.prototype._variance = function (x, mean) {
+    BivariateGaussHelper.prototype._variance = function (x, mean) {
         if (!mean)
             mean = this._mean(x);
         var variance = 0;
@@ -19,27 +19,12 @@ var BivariateGauss = (function () {
         variance = variance / (x.length - 1);
         return variance;
     };
-    BivariateGauss.getDistributionStatistics = function (x, y) {
-        var meanX = this.prototype._mean(x), meanY = this.prototype._mean(y), covariance = 0, varianceX = 0, varianceY = 0;
-        for (var i = 0; i < x.length; i++) {
-            varianceX += Math.pow(+x[i] - meanX, 2);
-            varianceY += Math.pow(+y[i] - meanY, 2);
-            covariance += (+x[i] - meanX) * (+y[i] - meanY);
-        }
-        varianceX = varianceX / (x.length - 1);
-        varianceY = varianceY / (x.length - 1);
-        covariance = covariance / (x.length - 1);
-        if (isNaN(varianceX))
-            return;
-        else
-            return new KeyDistribution(meanX, meanY, varianceX, varianceY, covariance);
-    };
-    BivariateGauss.getDeterminant = function (matrix) {
+    BivariateGaussHelper.getDeterminant = function (matrix) {
         //[a b; c d]
         //det = ad - bc
         return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
     };
-    BivariateGauss.getInverseMatrix = function (matrix, determinant) {
+    BivariateGaussHelper.getInverseMatrix = function (matrix, determinant) {
         // I = [1 0; 0 1] = identity matrix
         // A = [a b; c d] = [varX cov; cov varY] = input matrix
         // A^-1 = [? ?;? ?] = inverse matrix
@@ -64,40 +49,72 @@ var BivariateGauss = (function () {
         inverseMatrix[1][1] = matrix[0][0] / determinant;
         return inverseMatrix;
     };
-    BivariateGauss.pdf = function (keydist, x, y) {
+    BivariateGaussHelper.getDistributionStatistics = function (x, y) {
+        var meanX = this.prototype._mean(x), meanY = this.prototype._mean(y), covariance = 0, varianceX = 0, varianceY = 0;
+        for (var i = 0; i < x.length; i++) {
+            varianceX += Math.pow(+x[i] - meanX, 2);
+            varianceY += Math.pow(+y[i] - meanY, 2);
+            covariance += (+x[i] - meanX) * (+y[i] - meanY);
+        }
+        varianceX = varianceX / (x.length - 1);
+        varianceY = varianceY / (x.length - 1);
+        covariance = covariance / (x.length - 1);
+        if (isNaN(varianceX))
+            return;
+        else
+            return new KeyDistributionParameters(meanX, meanY, varianceX, varianceY, covariance);
+    };
+    return BivariateGaussHelper;
+})();
+var BivariateGauss = (function () {
+    function BivariateGauss(keyDistribution) {
+        this.keyDistribution = keyDistribution;
+        this.covMatrix = [];
+        this.covMatrix[0] = [keyDistribution.varianceX, keyDistribution.covariance];
+        this.covMatrix[1] = [keyDistribution.covariance, keyDistribution.varianceY];
+        this.determinant = BivariateGaussHelper.getDeterminant(this.covMatrix);
+        this.inverseMatrix = BivariateGaussHelper.getInverseMatrix(this.covMatrix, this.determinant);
+    }
+    BivariateGauss.prototype.pdf = function (x, y) {
         // pdf = (2*Math.PI)^(-nrOfDimensions/2) * determinant^.5 * e^(-1/2 * ([x y]-[meanX meanY])' * inverseMatrix * ([x y]-[meanX meanY]))
         // mu as row vector [muX muY]
         // Subtract mu from given coordinate
         // [x y]-[muX muY]
-        x = x - keydist.meanX;
-        y = y - keydist.meanY;
+        x = x - this.keyDistribution.meanX;
+        y = y - this.keyDistribution.meanY;
         //  Multiply the inversematrix with new x and y 'vector'
         //  inverseMatrix * ([x y]-[muX muY])
-        var v1 = keydist.inverseMatrix[0][0] * x + keydist.inverseMatrix[0][1] * y;
-        var v2 = keydist.inverseMatrix[1][0] * x + keydist.inverseMatrix[1][1] * y;
+        var v1 = this.inverseMatrix[0][0] * x + this.inverseMatrix[0][1] * y;
+        var v2 = this.inverseMatrix[1][0] * x + this.inverseMatrix[1][1] * y;
         // Multiply new variables with ([x y]-[muX muY])'
         // ([x y]-[muX muY])' * inverseMatrix * ([x y]-[muX muY])
         var v3 = x * v1 + y * v2;
-        var result = Math.exp(-.5 * v3) / (2 * Math.PI * Math.sqrt(keydist.determinant));
+        var result = Math.exp(-.5 * v3) / (2 * Math.PI * Math.sqrt(this.determinant));
         return result;
+    };
+    BivariateGauss.prototype.mahalanobis = function (x, y) {
+        // Subtract mu from given coordinate
+        // [x y]-[muX muY]
+        x = x - this.keyDistribution.meanX;
+        y = y - this.keyDistribution.meanY;
+        //  Multiply the inversematrix with new x and y 'vector'
+        //  inverseMatrix * ([x y]-[muX muY])
+        var v1 = this.inverseMatrix[0][0] * x + this.inverseMatrix[0][1] * y;
+        var v2 = this.inverseMatrix[1][0] * x + this.inverseMatrix[1][1] * y;
+        // Multiply new variables with ([x y]-[muX muY])'
+        // ([x y]-[muX muY])' * inverseMatrix * ([x y]-[muX muY])
+        var v3 = x * v1 + y * v2;
+        return Math.sqrt(v3);
     };
     return BivariateGauss;
 })();
-var KeyDistribution = (function () {
-    function KeyDistribution(meanX, meanY, varianceX, varianceY, covariance) {
+var KeyDistributionParameters = (function () {
+    function KeyDistributionParameters(meanX, meanY, varianceX, varianceY, covariance) {
         this.meanX = meanX;
         this.meanY = meanY;
         this.varianceX = varianceX;
         this.varianceY = varianceY;
         this.covariance = covariance;
-        this.inputMatrix = [];
-        this.inputMatrix[0] = [varianceX, covariance];
-        this.inputMatrix[1] = [covariance, varianceY];
-        this.determinant = BivariateGauss.getDeterminant(this.inputMatrix);
-        this.inverseMatrix = BivariateGauss.getInverseMatrix(this.inputMatrix, this.determinant);
     }
-    KeyDistribution.prototype.calcGauss = function (x, y) {
-        BivariateGauss.pdf(this, x, y);
-    };
-    return KeyDistribution;
+    return KeyDistributionParameters;
 })();

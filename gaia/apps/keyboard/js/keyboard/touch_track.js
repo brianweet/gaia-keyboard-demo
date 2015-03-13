@@ -84,6 +84,7 @@
               data: { id: data.id } 
             }, evt.origin);
             this.clear();
+            this._isTracking = false;
             break;
         }
         break;
@@ -123,8 +124,8 @@
     var touchEvent = 
             {
               type: type,
-              screenX: evt.screenX,
-              screenY: evt.screenY,
+              screenX: evt.clientX,
+              screenY: evt.clientY,
               keycode: evt.target.dataset.keycode,
               keycodeUpper: evt.target.dataset.keycodeUpper,
               isUpperCase: this.app.upperCaseStateManager.isUpperCase,

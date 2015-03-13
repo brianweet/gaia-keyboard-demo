@@ -53,12 +53,6 @@ TypeTestHandler.prototype.start = function(keyboardDimensions, screenDimensions)
   Promise
     .all([this._register(keyboardDimensions, screenDimensions), this._getDataSet()])
     .then(function() {
-      //tell touchtrack were ready, so start tracking keys
-      this.app.postMessage({
-        api: 'touchTrack',
-        method: 'startTracking'
-      });
-      
       //init first sentence
       if(!dataset || !dataset.length){
         throw new Error('TypeTestHandler: No dataset');  
@@ -140,7 +134,7 @@ TypeTestHandler.prototype.checkInputChar = function(char){
 
     //check if input char is correct
     var isWrongChar = false;
-    if(sentence[this.currentCharPos] !== char){
+    if(sentence[this.currentCharPos].toLowerCase() !== char.toLowerCase()){
       isWrongChar = true;
       result.wrongCharCount++;
     }
@@ -195,9 +189,7 @@ TypeTestHandler.prototype._sendResultToServer = function(resultSentenceObj) {
 };
 
 TypeTestHandler.prototype._setNewSentence = function() {
-  //get new sentence from dataset
-  var newSentenceObj = dataset.splice(Math.floor(Math.random()*dataset.length),1)[0];
-  
+
   //reset keyboard to initial state
   this.app.inputMethodHandler.clear();
   this.app.postMessage({
@@ -210,6 +202,15 @@ TypeTestHandler.prototype._setNewSentence = function() {
     textAfterCursor: ''
   });
 
+  //ensure that we're tracking touches
+  this.app.postMessage({
+    api: 'touchTrack',
+    method: 'startTracking'
+  });
+
+  //get new sentence from dataset
+  var newSentenceObj = dataset.splice(Math.floor(Math.random()*dataset.length),1)[0];
+  
   //create result object to store results in
   var sentenceResult = new SentenceResult(newSentenceObj);
   results.set(sentenceResult.id, sentenceResult);

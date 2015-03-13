@@ -92,7 +92,6 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 	  			for (var i = 0; i < this.model.length; i++) {
 	  				map[this.model[i].char.charCodeAt(0)] = this.model[i].stat;
 	  			};
-	  			debugger;
 	  			this.dom.emulateFrame.contentWindow.postMessage({
 					api: 'demo',
 					method: 'injectModel',
@@ -154,7 +153,8 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 			        "data": [],
 			        "columns": [
 			            { "title": "Char" },
-			            { "title": "gauss pdf" }
+			            { "title": "gauss pdf" },
+			            { "title": "mahalanobis distance" }
 			        ],
 					"paging": false
 			    }).DataTable();   
@@ -162,11 +162,13 @@ HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
 				this.probablilityResultsTable.rows().remove();
 
 	  			for (var i = 0; i < this.model.length; i++) {
-	  				var prob = this.model[i].stat.calcGauss(coords.x, coords.y);
-	  				this.probablilityResultsTable.row.add([ this.model[i].char, prob ]);
+	  				var gauss = new BivariateGauss(this.model[i].stat);
+	  				var prob = gauss.pdf(coords.x, coords.y);
+	  				var dist = gauss.mahalanobis(coords.x, coords.y);
+	  				this.probablilityResultsTable.row.add([ this.model[i].char, prob, dist ]);
 	  			};
 	  			this.probablilityResultsTable
-			    .order([ 1, "desc" ])
+			    .order([ 2, "asc" ])
 			    .draw();
   			}	
 		}

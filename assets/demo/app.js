@@ -32,6 +32,7 @@ KeyboardDemoApp.prototype.start = function() {
     'app.html#' + this.GAIA_APP_DIR + '/index.html#' + hash;
 
   this.focused = true;
+  this.container.contentWindow.focus();
 };
 
 KeyboardDemoApp.prototype.getFocus = function() {
