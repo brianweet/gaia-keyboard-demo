@@ -60,10 +60,10 @@ class EmulateTouchEvents{
 		this._timeoutId = window.setTimeout(function(){
       this._currentTime = eventTimeStamp;
       //fire touch events
-      this.fireEvent(recordedEvents);
+      this.fireEvent(recordedEvents.slice());
       //process rest of the events
       if(remainingEvents && remainingEvents.length)
-        this.process(remainingEvents);
+        this.process(remainingEvents.slice());
       }.bind(this), eventTimeStamp - this._currentTime);
 	}
 
@@ -71,24 +71,32 @@ class EmulateTouchEvents{
     if(!this._started)
       return;
       
-		var el = document.elementFromPoint(recordedEvents[0].screenX, recordedEvents[0].screenY);
-   	var event = new CustomEvent(recordedEvents[0].type, {
+		var el;
+    console.log(app.layoutRenderingManager.domObjectMap.size);
+    app.layoutRenderingManager.domObjectMap.forEach(function (target, targetEl) {
+        if(recordedEvents[0].keycode == target.keyCode)
+            el= targetEl;
+    });
+
+    if(!el)
+        el = document.elementFromPoint(recordedEvents[0].screenX, recordedEvents[0].screenY);
+
+    var event = new CustomEvent(recordedEvents[0].type, {
         cancelable: true,
         bubbles: true
-      });
+    });
     event.changedTouches = [];
     for (var i = 0; i < recordedEvents.length; ++i) {
-      var recordedEvent = recordedEvents[i];
-      event.changedTouches.push({
-          target: el,
-          identifier: recordedEvent.identifier || 0,
-          radiusX: recordedEvent.radiusX || 0,
-          radiusY: recordedEvent.radiusY || 0,
-          clientX: recordedEvent.screenX,
-          clientY: recordedEvent.screenY
-        })
+        var recordedEvent = recordedEvents[i];
+        event.changedTouches.push({
+            target: el,
+            identifier: recordedEvent.identifier || 0,
+            radiusX: recordedEvent.radiusX || 0,
+            radiusY: recordedEvent.radiusY || 0,
+            clientX: recordedEvent.screenX,
+            clientY: recordedEvent.screenY
+        });
     };
-    
     el.dispatchEvent(event);
 	}
 }

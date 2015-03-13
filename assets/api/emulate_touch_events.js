@@ -8,7 +8,6 @@ var EmulateTouchEvents = (function () {
     EmulateTouchEvents.prototype.start = function (touchEventList) {
         if (this._started)
             throw 'EmulateTouchEvents: Already started';
-        
         this._started = true;
         this._currentTime = 0;
         if (this._timeoutId != -1) {
@@ -49,22 +48,18 @@ var EmulateTouchEvents = (function () {
             if (remainingEvents && remainingEvents.length)
                 this.process(remainingEvents.slice());
         }.bind(this), eventTimeStamp - this._currentTime);
-        //console.log(eventTimeStamp - this._currentTime);
-        //console.log(eventTimeStamp);
     };
     EmulateTouchEvents.prototype.fireEvent = function (recordedEvents) {
         if (!this._started)
             return;
-
         var el;
+        console.log(app.layoutRenderingManager.domObjectMap.size);
         app.layoutRenderingManager.domObjectMap.forEach(function (target, targetEl) {
-            if(recordedEvents[0].keycode == target.keyCode)
-                el= targetEl;
+            if (recordedEvents[0].keycode == target.keyCode)
+                el = targetEl;
         });
-
-        if(!el)
+        if (!el)
             el = document.elementFromPoint(recordedEvents[0].screenX, recordedEvents[0].screenY);
-
         var event = new CustomEvent(recordedEvents[0].type, {
             cancelable: true,
             bubbles: true
@@ -80,10 +75,9 @@ var EmulateTouchEvents = (function () {
                 clientX: recordedEvent.screenX,
                 clientY: recordedEvent.screenY
             });
-        };
+        }
+        ;
         el.dispatchEvent(event);
-        //console.log(event);
-        //console.log(recordedEvents[0].type + ' ' + String.fromCharCode(recordedEvents[0].keycode) + ' ' +  recordedEvents[0].screenX + ' ' + recordedEvents[0].screenY)
     };
     return EmulateTouchEvents;
 })();
