@@ -1,3 +1,10 @@
+var Point = (function () {
+    function Point(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+    return Point;
+})();
 var TouchEventType = (function () {
     // boilerplate 
     function TouchEventType(value) {

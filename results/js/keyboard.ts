@@ -13,6 +13,8 @@ class AnnotationHelper {
             var correctChar = sentenceResult.sentence.s[i];
             var correctCharCode = correctChar.charCodeAt(0);
             var typedChar = sentenceResult.typedSequence[i];
+            if(!typedChar)
+                break;
             var typedCharCode = typedChar.charCodeAt(0);
 
             //find the touch end event index for this charcode
@@ -308,7 +310,7 @@ class ModelGenerator {
 
     calculate(){
         var result = [];
-        var forChars = 'abcdefghijklmnopqrstuvwxyz.,'.split('');
+        var forChars = 'abcdefghijklmnopqrstuvwxyz., '.split('');
         for (var i = 0; i < forChars.length; i++) {
             var currentChar = forChars[i];
             var charCode = currentChar.charCodeAt(0);
@@ -321,10 +323,9 @@ class ModelGenerator {
                                 charEvents.concat(this.randomKeyEvents[charCode].slice(0, 100 - charEvents.length)) : 
                                 charEvents.slice(0, 100);
 
-            var x = allEvents.map((ev) => { return ev.screenX });
-            var y = allEvents.map((ev) => { return ev.screenY });
-
-            var distr = BivariateGaussHelper.getDistributionStatistics(x, y);
+            var points = allEvents.map((ev) => { return new Point(ev.screenX, ev.screenY) });
+           
+            var distr = BivariateGaussHelper.getDistributionStatistics(points);
             if(distr)
                 result.push({char: currentChar, stat: distr});
         }

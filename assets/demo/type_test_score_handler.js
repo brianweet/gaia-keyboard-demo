@@ -20,8 +20,9 @@ var TypeTestScoreHandler = function(typeTestHandler, nrOfSentences, nrOfLevels) 
 
   this.completedSentencesCount = 0;
   this.totalTimeCount = 0;
-  this.totalCharCount = 0;
-  this.totalWrongCharCount = 0;
+  this.totalTypedCharCount = 0;
+  this.totalSentenceCharCount = 0;
+  this.totalEditDistCount = 0;
   this.progressInterval = -1;
 };
 
@@ -37,18 +38,11 @@ TypeTestScoreHandler.prototype.TYPED_SENTENCE_ELEMENT_ID = 'typed-sentence';
 TypeTestScoreHandler.prototype.CURRENT_LEVEL_ELEMENT_ID = 'current-level';
 // current sentence score
 TypeTestScoreHandler.prototype.LAST_CPM_ELEMENT_ID = 'last-cpm';
-TypeTestScoreHandler.prototype.LAST_CORRECT_CPM_ELEMENT_ID = 'last-correct-cpm';
-TypeTestScoreHandler.prototype.LAST_ERROR_ELEMENT_ID = 'last-error-percentage';
-TypeTestScoreHandler.prototype.LAST_CHAR_ELEMENT_ID = 'last-char';
-TypeTestScoreHandler.prototype.LAST_CORRECT_CHAR_ELEMENT_ID = 'last-correct-char';
-TypeTestScoreHandler.prototype.LAST_WRONG_CHAR_ELEMENT_ID = 'last-wrong-char';
+TypeTestScoreHandler.prototype.LAST_EDIT_DIST_ELEMENT_ID = 'last-edit-dist';
+TypeTestScoreHandler.prototype.LAST_ERROR_ELEMENT_ID = 'last-error';
 //total score
 TypeTestScoreHandler.prototype.TOTAL_CPM_ELEMENT_ID = 'total-cpm';
-TypeTestScoreHandler.prototype.TOTAL_CORRECT_CPM_ELEMENT_ID = 'total-correct-cpm';
-TypeTestScoreHandler.prototype.TOTAL_ERROR_ELEMENT_ID = 'total-error-percentage';
-TypeTestScoreHandler.prototype.TOTAL_CHAR_ELEMENT_ID = 'total-char';
-TypeTestScoreHandler.prototype.TOTAL_CORRECT_CHAR_ELEMENT_ID = 'total-correct-char';
-TypeTestScoreHandler.prototype.TOTAL_WRONG_CHAR_ELEMENT_ID = 'total-wrong-char';
+TypeTestScoreHandler.prototype.TOTAL_ERROR_ELEMENT_ID = 'total-error';
 //
 TypeTestScoreHandler.prototype.HIGHSCORE_BUTTON_ELEMENT_ID = 'highscore-button';
 // Submit score
@@ -72,19 +66,10 @@ TypeTestScoreHandler.prototype.start = function() {
   this.typedSentence.appendChild(document.createTextNode(''));
 
   this.lastCpm = document.getElementById(this.LAST_CPM_ELEMENT_ID);
-  this.lastCorrectCpm = document.getElementById(this.LAST_CORRECT_CPM_ELEMENT_ID);
+  this.lastEditDist = document.getElementById(this.LAST_EDIT_DIST_ELEMENT_ID);
   this.lastError = document.getElementById(this.LAST_ERROR_ELEMENT_ID);
-  this.lastChar = document.getElementById(this.LAST_CHAR_ELEMENT_ID);
-  this.lastCorrectChar = document.getElementById(this.LAST_CORRECT_CHAR_ELEMENT_ID);
-  this.lastWrongChar = document.getElementById(this.LAST_WRONG_CHAR_ELEMENT_ID);
-  
   this.totalCpm = document.getElementById(this.TOTAL_CPM_ELEMENT_ID);
-  this.totalCorrectCpm = document.getElementById(this.TOTAL_CORRECT_CPM_ELEMENT_ID);
   this.totalError = document.getElementById(this.TOTAL_ERROR_ELEMENT_ID);
-  this.totalChar = document.getElementById(this.TOTAL_CHAR_ELEMENT_ID);
-  this.totalCorrectChar = document.getElementById(this.TOTAL_CORRECT_CHAR_ELEMENT_ID);
-  this.totalWrongChar = document.getElementById(this.TOTAL_WRONG_CHAR_ELEMENT_ID);
-  
 
   this.highscorePanel = document.getElementById(this.HIGHSCORE_PANEL_ELEMENT_ID);
   this.highscoreButton = document.getElementById(this.HIGHSCORE_BUTTON_ELEMENT_ID);
@@ -124,7 +109,7 @@ TypeTestScoreHandler.prototype.handleEvent = function(evt) {
   }
 };
 
-TypeTestScoreHandler.prototype.getHighscore = function() {
+TypeTestScoreHandler.prototype.getHighscore = function(result) {
   Utils.getJSON('/api/highscore')
   .then(function(resp){
     var highscores = JSON.parse(resp);
@@ -137,6 +122,13 @@ TypeTestScoreHandler.prototype.getHighscore = function() {
       var score = highscores[i];
 
       var row = document.createElement('tr');
+      if(this.nicknameInput.value && score.nickname == this.nicknameInput.value){
+        if(result && score.score == result)
+          row.classList.add("success");
+        else
+          row.classList.add("warning");
+      }
+
       var nn = document.createElement('td');
       nn.appendChild(document.createTextNode(score.nickname));
       var sc = document.createElement('td');
@@ -176,8 +168,9 @@ TypeTestScoreHandler.prototype._sendNickName = function(nickname) {
 
   //send data to server
   return Utils.postJSON('/api/nickname/' + this.typeTestHandler._typeTestSessionId, {nickname: nickname})
-  .then(function(){
-    this.getHighscore();
+  .then(function(result){
+    var score = (result.indexOf('Score:') == 0) ? result.substr(6) : null;
+    this.getHighscore(score);
   }.bind(this))
   .catch(function(e){
     this.submitStatus.textContent = 'Something went wrong, please try to submit again';
@@ -235,42 +228,33 @@ TypeTestScoreHandler.prototype.hideScore = function() {
 TypeTestScoreHandler.prototype.addCompletedSentence = function(res) {
   ++this.completedSentencesCount;
   var lastTouch = res.data[res.data.length -1];
+  var currentEditDistance = Utils.getEditDistance(res.typedSequence, res.sentence.s);
+
   this.totalTimeCount += lastTouch.time;
-  this.totalCharCount += res.sentence.s.length;
-  this.totalWrongCharCount += res.wrongCharCount;
+  this.totalTypedCharCount += res.typedSequence.length;
+  this.totalSentenceCharCount += res.sentence.s.length;
+  this.totalEditDistCount += currentEditDistance;
   
   //current cpm
-  var currentScore = getScore(lastTouch.time, res.sentence.s.length, res.wrongCharCount);
-  this.lastCpm.innerHTML =  currentScore.cpm;
-  this.lastCorrectCpm.innerHTML = currentScore.correctCpm;
-  this.lastError.innerHTML = currentScore.error  + '%';
-
+  var currentScore = getScore(lastTouch.time, res.typedSequence.length, res.sentence.s.length, currentEditDistance);
+  this.lastCpm.innerHTML = currentScore.cpm;
+  this.lastEditDist.innerHTML = currentEditDistance;
+  this.lastError.innerHTML = currentScore.error + '%';
+  
   //total cpm
-  var totalScore = getScore(this.totalTimeCount, this.totalCharCount, this.totalWrongCharCount);
+  var totalScore = getScore(this.totalTimeCount, this.totalTypedCharCount, this.totalSentenceCharCount, this.totalEditDistCount);
   this.totalCpm.innerHTML = totalScore.cpm;
-  this.totalCorrectCpm.innerHTML = totalScore.correctCpm;
   this.totalError.innerHTML = totalScore.error + '%';
-
-  //current char count
-  this.lastChar.innerHTML = res.sentence.s.length;
-  this.lastCorrectChar.innerHTML = res.sentence.s.length - res.wrongCharCount;
-  this.lastWrongChar.innerHTML = res.wrongCharCount;
-
-  //total char count
-  this.totalChar.innerHTML = this.totalCharCount;
-  this.totalCorrectChar.innerHTML = this.totalCharCount - this.totalWrongCharCount;
-  this.totalWrongChar.innerHTML = this.totalWrongCharCount;
-
+  
   //typed sequence
   this.lastSentence.lastChild.textContent = res.typedSequence;
   this.typedSentence.lastChild.textContent = res.sentence.s;
 };
 
-function getScore(time, sentenceLength, wrongCharCount){
+function getScore(time, typedLength, sentenceLength, wrongCharCount){
   var tm = 60000 / time;
   return{
-    cpm: Math.floor(tm * sentenceLength),
-    correctCpm: Math.floor(tm * (sentenceLength - wrongCharCount)),
+    cpm: Math.floor(tm * typedLength),
     error: Math.floor(wrongCharCount * 100 / sentenceLength)
   };
 }

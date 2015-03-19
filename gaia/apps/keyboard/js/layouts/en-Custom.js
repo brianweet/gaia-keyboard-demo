@@ -21,10 +21,10 @@ Keyboards['en-Custom'] = {
       { value: '⇪', ratio: 1.5, keyCode: KeyEvent.DOM_VK_CAPS_LOCK },
       { value: 'z' }, { value: 'x' }, { value: 'c' }, { value: 'v' },
       { value: 'b' }, { value: 'n' }, { value: 'm' },
-      { value: '', ratio: 1.5, keyCode: KeyEvent.DOM_VK_RETURN }
+      { value: '', ratio: 1.5, keyCode: KeyEvent.DOM_VK_CAPS_LOCK }
     ], [
       { value: '&nbsp', ratio: 8, keyCode: KeyboardEvent.DOM_VK_SPACE },
-      { value: '', ratio: 2, keyCode: KeyEvent.DOM_VK_RETURN }
+      { value: '↵', ratio: 2, keyCode: KeyEvent.DOM_VK_RETURN }
     ]
   ],
   pages: [undefined, {

@@ -116,7 +116,7 @@ TypeTestHandler.prototype.processLog = function(logMessage) {
 }
 
 TypeTestHandler.prototype.checkInputChar = function(char){
-    if(!this._started)
+    if(!this._started || this.currentCharPos === -1)
       return;
 
     var result = results.get(this.currentResultId);
@@ -143,9 +143,6 @@ TypeTestHandler.prototype.checkInputChar = function(char){
     if(sentence.length <= ++this.currentCharPos){
       this._endCurrentSentence();
     }
-    
-    //show progress on UI (make part of the sentence bold)
-    this._drawUISentence(this.sentenceEl, this.currentCharPos, isWrongChar, sentence);
 };
 
 TypeTestHandler.prototype.timeIsUp = function() {
@@ -221,16 +218,21 @@ TypeTestHandler.prototype._setNewSentence = function() {
   while(this.sentenceEl.lastChild)
     this.sentenceEl.removeChild(this.sentenceEl.lastChild);
 
-  var newEl = document.createElement('strong');
-  newEl.appendChild(document.createTextNode(currentChar));
-  this.sentenceEl.appendChild(newEl);
-  this.sentenceEl.appendChild(document.createTextNode(newSentenceObj.s.slice(1)));
+  // var newEl = document.createElement('strong');
+  // newEl.appendChild(document.createTextNode(currentChar));
+  // this.sentenceEl.appendChild(newEl);
+  // this.sentenceEl.appendChild(document.createTextNode(newSentenceObj.s.slice(1)));
+  this.sentenceEl.appendChild(document.createTextNode(newSentenceObj.s));
 
   //
   this.scoreHandler.updateLevel();
 };
 
 TypeTestHandler.prototype._endCurrentSentence = function() {
+  if(this.currentCharPos === -1)
+    return;
+
+  this.currentCharPos = -1;
   this.scoreHandler.stopTyping();
 
   if(window.navigator.vibrate)
@@ -242,40 +244,6 @@ TypeTestHandler.prototype._endCurrentSentence = function() {
     method: 'getLogAndClear',
     id: this.currentResultId
   });
-};
-
-TypeTestHandler.prototype._drawUISentence = function(el, cp, iwc, s) {
-  window.requestAnimationFrame(
-    function(el, charPos, isWrongChar, sentence) {
-      var lastChar = s.slice(charPos-1, charPos),
-          newChar = s.slice(charPos, charPos + 1),
-          remainingText = s.slice(charPos + 1);
-      
-      //remove remaining text
-      if(el.lastChild && el.lastChild.nodeName === '#text'){
-        el.removeChild(el.lastChild);
-      }
-
-      //remove last strong character (want to add it as mark element)
-      if(el.lastChild && el.lastChild.nodeName.toLocaleLowerCase() === 'strong'){
-        el.removeChild(el.lastChild);
-      }
-
-      if(!el.lastChild)
-        el.appendChild(document.createTextNode(lastChar));
-      else{
-        el.lastChild.textContent += lastChar;
-      }
-
-      //if next char is space, show underscore
-      if(remainingText.length && /\s/.test(newChar))
-        newChar = '_';
-      var newCharEl = document.createElement('strong');
-      newCharEl.appendChild(document.createTextNode(newChar));
-      el.appendChild(newCharEl);
-      el.appendChild(document.createTextNode(remainingText));
-      
-    }.bind(this, el, cp, iwc, s));
 };
 
 exports.TypeTestHandler = TypeTestHandler;

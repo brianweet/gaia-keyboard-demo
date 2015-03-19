@@ -172,8 +172,8 @@
                   "text": "The 'game' is simple, first read the given sentence, then remember the given sentence and eventually type the given sentence."
                 },
                 {
-                  "image":"/ftu/style/images/bold_char.png",
-                  "text": "The bold character shows you which character you have to type next. If it shows an underscore, you have to push the space button. It is a bit hard to make whitespace bold, right? :)"
+                  "image":"/ftu/style/images/return.png",
+                  "text": "When you are done with the sentence, you can press the return key."
                 },
                 {
                   "image":"/ftu/style/images/normal.jpg",
@@ -238,7 +238,7 @@
       // Update the image
       var imgElement = dom.tutorialStepImage;
 
-      imgElement.hidden = true;
+      imgElement.hidden = true; 
       var stepPromise = _loadMedia(imgElement, stepData.image);
 
       return stepPromise;

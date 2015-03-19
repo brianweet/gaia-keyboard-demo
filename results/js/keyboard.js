@@ -13,6 +13,8 @@ var AnnotationHelper = (function () {
             var correctChar = sentenceResult.sentence.s[i];
             var correctCharCode = correctChar.charCodeAt(0);
             var typedChar = sentenceResult.typedSequence[i];
+            if (!typedChar)
+                break;
             var typedCharCode = typedChar.charCodeAt(0);
             //find the touch end event index for this charcode
             var touchEndIndex = this.findEventIdx(keyboard, sentenceResult.data, j, typedChar);
@@ -277,7 +279,7 @@ var ModelGenerator = (function () {
     };
     ModelGenerator.prototype.calculate = function () {
         var result = [];
-        var forChars = 'abcdefghijklmnopqrstuvwxyz.,'.split('');
+        var forChars = 'abcdefghijklmnopqrstuvwxyz., '.split('');
         for (var i = 0; i < forChars.length; i++) {
             var currentChar = forChars[i];
             var charCode = currentChar.charCodeAt(0);
@@ -286,13 +288,10 @@ var ModelGenerator = (function () {
             });
             // add random events to end up with a total of 100 events
             var allEvents = (charEvents.length < this._minModelEvents) ? charEvents.concat(this.randomKeyEvents[charCode].slice(0, 100 - charEvents.length)) : charEvents.slice(0, 100);
-            var x = allEvents.map(function (ev) {
-                return ev.screenX;
+            var points = allEvents.map(function (ev) {
+                return new Point(ev.screenX, ev.screenY);
             });
-            var y = allEvents.map(function (ev) {
-                return ev.screenY;
-            });
-            var distr = BivariateGaussHelper.getDistributionStatistics(x, y);
+            var distr = BivariateGaussHelper.getDistributionStatistics(points);
             if (distr)
                 result.push({ char: currentChar, stat: distr });
         }

@@ -178,7 +178,7 @@ InputMethodHandler.prototype._handleInput = function(job, str, offset, length) {
       break;
 
     case 'return':
-      this._currentText += '\n';
+      this.app.typeTestHandler._endCurrentSentence();
 
       break;
 

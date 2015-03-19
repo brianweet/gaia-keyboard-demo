@@ -1,17 +1,50 @@
+var Temp = (function () {
+    function Temp() {
+    }
+    Temp.prototype.mean = function (samples) {
+        var mean = new Point(0, 0), N = samples.length;
+        for (var i = 0; i < N; i++) {
+            mean.x += samples[i].x;
+            mean.y += samples[i].y;
+        }
+        mean.x = mean.x / N;
+        mean.y = mean.y / N;
+        return mean;
+    };
+    Temp.prototype.covariance = function (samples) {
+        var mean = this.mean(samples), covariance = 0, N = samples.length;
+        for (var i = 0; i < N; i++) {
+            covariance += (samples[i].x - mean.x) * (samples[i].y - mean.y);
+        }
+        covariance = covariance / (N - 1);
+        return covariance;
+    };
+    Temp.prototype.variance = function (samples) {
+        var mean = this.mean(samples), variance = new Point(0, 0), N = samples.length;
+        for (var i = 0; i < N; i++) {
+            variance.x += Math.pow(samples[i].x - mean.x, 2);
+            variance.y += Math.pow(samples[i].y - mean.y, 2);
+        }
+        variance.x = variance.x / (N - 1);
+        variance.y = variance.y / (N - 1);
+        return variance;
+    };
+    return Temp;
+})();
 var BivariateGaussHelper = (function () {
     function BivariateGaussHelper() {
     }
-    BivariateGaussHelper.prototype._mean = function (x) {
-        var sum = 0;
-        for (var i = 0; i < x.length; i++) {
-            sum += x[i];
+    BivariateGaussHelper.prototype._mean = function (samples) {
+        var mean = new Point(0, 0), N = samples.length;
+        for (var i = 0; i < N; i++) {
+            mean.x += samples[i].x;
+            mean.y += samples[i].y;
         }
-        var mean = sum / x.length;
+        mean.x = mean.x / N;
+        mean.y = mean.y / N;
         return mean;
     };
     BivariateGaussHelper.prototype._variance = function (x, mean) {
-        if (!mean)
-            mean = this._mean(x);
         var variance = 0;
         for (var i = 0; i < x.length; i++) {
             variance += Math.pow(x[i] - mean, 2);
@@ -49,20 +82,22 @@ var BivariateGaussHelper = (function () {
         inverseMatrix[1][1] = matrix[0][0] / determinant;
         return inverseMatrix;
     };
-    BivariateGaussHelper.getDistributionStatistics = function (x, y) {
-        var meanX = this.prototype._mean(x), meanY = this.prototype._mean(y), covariance = 0, varianceX = 0, varianceY = 0;
-        for (var i = 0; i < x.length; i++) {
-            varianceX += Math.pow(+x[i] - meanX, 2);
-            varianceY += Math.pow(+y[i] - meanY, 2);
-            covariance += (+x[i] - meanX) * (+y[i] - meanY);
+    BivariateGaussHelper.getDistributionStatistics = function (samples) {
+        var mean = this.prototype._mean(samples), covariance = 0, varianceX = 0, varianceY = 0, N = samples.length;
+        var diffX, diffY;
+        for (var i = 0; i < N; i++) {
+            diffX = +samples[i].x - +mean.x, diffY = +samples[i].y - +mean.y;
+            varianceX += Math.pow(diffX, 2);
+            varianceY += Math.pow(diffY, 2);
+            covariance += diffX * diffY;
         }
-        varianceX = varianceX / (x.length - 1);
-        varianceY = varianceY / (x.length - 1);
-        covariance = covariance / (x.length - 1);
+        varianceX = varianceX / (N - 1);
+        varianceY = varianceY / (N - 1);
+        covariance = covariance / (N - 1);
         if (isNaN(varianceX))
             return;
         else
-            return new KeyDistributionParameters(meanX, meanY, varianceX, varianceY, covariance);
+            return new KeyDistributionParameters(mean.x, mean.y, varianceX, varianceY, covariance);
     };
     return BivariateGaussHelper;
 })();

@@ -1,3 +1,6 @@
+class Point {
+    constructor(public x,public y){}
+}
 class TouchEventType
 {
     // boilerplate 
