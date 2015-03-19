@@ -72,7 +72,6 @@ class EmulateTouchEvents{
       return;
       
 		var el;
-    console.log(app.layoutRenderingManager.domObjectMap.size);
     app.layoutRenderingManager.domObjectMap.forEach(function (target, targetEl) {
         if(recordedEvents[0].keycode == target.keyCode)
             el= targetEl;
@@ -90,7 +89,7 @@ class EmulateTouchEvents{
         var recordedEvent = recordedEvents[i];
         event.changedTouches.push({
             target: el,
-            identifier: recordedEvent.identifier || 0,
+            identifier: recordedEvent.touchId || 0,
             radiusX: recordedEvent.radiusX || 0,
             radiusY: recordedEvent.radiusY || 0,
             clientX: recordedEvent.screenX,
@@ -111,7 +110,7 @@ interface IRecordedTouchEvent {
     isUpperCase: boolean;
     time: number;
     systemTime: number;
-    identifier?: number;
+    touchId?: number;
     radiusX?: number;
     radiusY?: number;
 }

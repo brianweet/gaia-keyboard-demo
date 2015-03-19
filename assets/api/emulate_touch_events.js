@@ -53,7 +53,6 @@ var EmulateTouchEvents = (function () {
         if (!this._started)
             return;
         var el;
-        console.log(app.layoutRenderingManager.domObjectMap.size);
         app.layoutRenderingManager.domObjectMap.forEach(function (target, targetEl) {
             if (recordedEvents[0].keycode == target.keyCode)
                 el = targetEl;
@@ -69,7 +68,7 @@ var EmulateTouchEvents = (function () {
             var recordedEvent = recordedEvents[i];
             event.changedTouches.push({
                 target: el,
-                identifier: recordedEvent.identifier || 0,
+                identifier: recordedEvent.touchId || 0,
                 radiusX: recordedEvent.radiusX || 0,
                 radiusY: recordedEvent.radiusY || 0,
                 clientX: recordedEvent.screenX,
