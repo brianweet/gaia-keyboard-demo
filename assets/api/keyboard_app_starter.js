@@ -182,8 +182,6 @@ KeyboardAppStarter.prototype._startAPI = function() {
   }
 };
 
-
-
 KeyboardAppStarter.prototype.handleEvent = function(evt) {
   var data = evt.data;
 
@@ -218,6 +216,9 @@ KeyboardAppStarter.prototype.handleEvent = function(evt) {
         }
       };
       app.targetHandlersManager.activeTargetsManager.userPressManager.touchModel = touchModel;
+      break;
+    case 'twotouchcorrect':
+      app.targetHandlersManager.activeTargetsManager.userPressManager._twoFingerTouchCorrection = data.value;
       break;
   }
 };

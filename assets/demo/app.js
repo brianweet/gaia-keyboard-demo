@@ -191,35 +191,7 @@ KeyboardDemoApp.prototype.handleMessage = function(data) {
       break;
 
     case 'demo':
-      if(data.method === 'emulateTouchEvents'){
-        this.postMessage({
-          api: 'api',
-          method: 'stopEmulateTouchEvents',
-          data: data.data
-        });
-      } else if(data.method === 'emulateStopped'){
-        this.inputMethodHandler.clear();
-        this.postMessage({
-          api: 'inputmethod',
-          method: 'setInputContext',
-          ctx: true,
-          selectionStart: 0,
-          selectionEnd: 0,
-          textBeforeCursor: '',
-          textAfterCursor: ''
-        });
-        this.postMessage({
-          api: 'api',
-          method: 'startEmulateTouchEvents',
-          data: data.data
-        });
-      } else if(data.method === 'injectModel'){
-        this.postMessage({
-          api: 'api',
-          method: 'injectModel',
-          data: data.data
-        });
-      }
+      this.handleDemoMessage(data);
       break;
     default:
       throw new Error('KeyboardDemoApp: Unknown message.');
@@ -227,6 +199,72 @@ KeyboardDemoApp.prototype.handleMessage = function(data) {
       break;
   }
 };
+
+KeyboardDemoApp.prototype.handleDemoMessage = function(data){
+  switch (data.method) {
+    case 'emulateTouchEvents':
+      this.postMessage({
+        api: 'api',
+        method: 'stopEmulateTouchEvents',
+        data: data.data
+      });
+      break;
+    case 'emulateStopped':
+      this.inputMethodHandler.clear();
+      this.postMessage({
+        api: 'inputmethod',
+        method: 'setInputContext',
+        ctx: true,
+        selectionStart: 0,
+        selectionEnd: 0,
+        textBeforeCursor: '',
+        textAfterCursor: ''
+      });
+      this.postMessage({
+        api: 'api',
+        method: 'startEmulateTouchEvents',
+        data: data.data
+      });
+      break;
+    case 'injectModel':
+      this.postMessage({
+        api: 'api',
+        method: 'injectModel',
+        data: data.data
+      });
+      break;
+    case 'finishedTyping':
+      window.parent.postMessage({
+        api: 'results',
+        method: 'finishedTyping',
+        data: this.inputMethodHandler._currentText.trim()
+      }, '*');
+      break;
+    case 'autocorrect':
+      var el = document.querySelectorAll('input[data-setting-id="keyboard.autocorrect"]')[0];
+      if(data.value != el.checked){
+        this.removeFocus();
+
+        el.dispatchEvent(new MouseEvent('click', {
+          'view': window,
+          'bubbles': true,
+          'cancelable': true
+        }));
+
+        setTimeout(function(){
+          this.getFocus();  
+        }.bind(this),300);  
+      }
+      break;
+    case 'twotouchcorrect':
+      this.postMessage({
+        api: 'api',
+        method: 'twotouchcorrect',
+        value: data.value
+      });
+      break;
+  }
+}
 
 exports.KeyboardDemoApp = KeyboardDemoApp;
 

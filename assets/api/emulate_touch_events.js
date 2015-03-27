@@ -47,6 +47,8 @@ var EmulateTouchEvents = (function () {
             //process rest of the events
             if (remainingEvents && remainingEvents.length)
                 this.process(remainingEvents.slice());
+            else
+                this.endInput();
         }.bind(this), eventTimeStamp - this._currentTime);
     };
     EmulateTouchEvents.prototype.fireEvent = function (recordedEvents) {
@@ -77,6 +79,47 @@ var EmulateTouchEvents = (function () {
         }
         ;
         el.dispatchEvent(event);
+    };
+    EmulateTouchEvents.prototype.endInput = function () {
+        if (!this._started)
+            return;
+        var el, touch, evt;
+        app.layoutRenderingManager.domObjectMap.forEach(function (target, targetEl) {
+            if (target.keyCode == KeyEvent.DOM_VK_RETURN)
+                el = targetEl;
+        });
+        touch = {
+            target: el,
+            identifier: 0,
+            radiusX: 0,
+            radiusY: 0,
+            clientX: el.offsetLeft + el.clientWidth - 1,
+            clientY: window.innerHeight - el.offsetHeight + el.clientHeight - 1
+        };
+        setTimeout(function () {
+            evt = new CustomEvent('touchstart', {
+                cancelable: true,
+                bubbles: true
+            });
+            evt.changedTouches = [];
+            evt.changedTouches.push(touch);
+            el.dispatchEvent(evt);
+        }, 350);
+        setTimeout(function () {
+            evt = new CustomEvent('touchend', {
+                cancelable: true,
+                bubbles: true
+            });
+            evt.changedTouches = [];
+            evt.changedTouches.push(touch);
+            el.dispatchEvent(evt);
+        }, 400);
+        setTimeout(function () {
+            window.parent.postMessage({
+                api: 'demo',
+                method: 'finishedTyping'
+            }, '*');
+        }, 500);
     };
     return EmulateTouchEvents;
 })();
